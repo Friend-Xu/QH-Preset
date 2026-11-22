@@ -109,20 +109,39 @@ check('service groups carry their isolate realms', () => {
   }
 })
 
-check('skills directory holds the eight v0.1 skills', () => {
-  const dirs = skillDirs()
-  assert(dirs.length === 8, `expected 8 skills, found ${dirs.length}: ${dirs.join(', ')}`)
-  for (const name of dirs) {
+const EXPECTED_SKILLS = [
+  'brainstorming',
+  'eval-harness',
+  'executing-plans',
+  'qh-judgment',
+  'receiving-code-review',
+  'requesting-code-review',
+  'subagent-driven-development',
+  'test-driven-development',
+  'using-superpowers',
+  'verification-before-completion',
+  'writing-plans',
+]
+
+check('skills directory holds exactly the expected skills', () => {
+  const dirs = skillDirs().sort()
+  const missing = EXPECTED_SKILLS.filter(name => !dirs.includes(name))
+  const extra = dirs.filter(name => !EXPECTED_SKILLS.includes(name))
+  assert(missing.length === 0, `missing skills: ${missing.join(', ')}`)
+  assert(extra.length === 0, `unexpected skills: ${extra.join(', ')}`)
+  for (const name of EXPECTED_SKILLS) {
     const file = join(root, 'skills', name, 'SKILL.md')
     assert(existsSync(file), `skills/${name}/SKILL.md is missing`)
     const text = readFileSync(file, 'utf8').replace(/^\uFEFF/, '')
     const front = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text)
     assert(front !== null, `skills/${name}/SKILL.md has no frontmatter`)
+    assert(new RegExp(`^name:\\s*${name}\\s*$`, 'm').test(front[1]),
+      `skills/${name}/SKILL.md frontmatter name does not match its directory`)
     for (const field of ['name:', 'description:']) {
       assert(front[1].includes(field), `skills/${name}/SKILL.md frontmatter lacks ${field}`)
     }
   }
-  return dirs.join(', ')
+  return `${EXPECTED_SKILLS.length} skills`
 })
 
 check('no upstream namespace and no visual companion left', () => {

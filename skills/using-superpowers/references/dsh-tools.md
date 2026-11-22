@@ -40,19 +40,28 @@ reviewer", that sentence is the persona.
 If you dispatch, you own collection: wait for the child, integrate what it
 found, then finish your turn.
 
-## Shell scripts written for bash
+Nor does a child run the skill bootstrap: it is told to skip skill routing, and
+it never saw this conversation. Whatever the child must follow has to be in the
+prompt. What it does share is this preset — a child with no preset of its own
+joins this one, so the persona's invariants (evidence labels, collection, no
+fallbacks) still reach it. The prompt a child needs is in `qh-judgment`'s
+`references/delegation.md`.
 
-Several skills run small helper scripts (`scripts/sdd-workspace`,
-`scripts/task-brief`, `scripts/review-package`, `scripts/task-start`,
-`scripts/task-done`) whose first line is `#!/usr/bin/env bash`. `bash` is not
-on this machine's `PATH`; Git for Windows supplies one at an absolute path.
+## Helper scripts
 
-- Check it first: `Test-Path 'D:\Program Files\Git\bin\bash.exe'`.
-- Present: call it with the script and its arguments,
-  `& 'D:\Program Files\Git\bin\bash.exe' <script> <args>`, from the working
-  tree the skill names.
-- Absent: say the helper cannot run and stop there. Do not reimplement it from
-  memory, and never pretend it ran.
+Several skills ship small helper scripts (`scripts/sdd-workspace.mjs`,
+`scripts/task-brief.mjs`, `scripts/review-package.mjs`,
+`scripts/task-start.mjs`, `scripts/task-done.mjs`, `scripts/sdd-repo.mjs`). They
+are Node modules and need nothing but `node` on `PATH`:
+
+- Call one as `node <absolute path to the script> <args>`, from the working tree
+  the skill names. The skill prints the absolute path with the instruction.
+- They write no temp files, capture no child output through pipes (that fails
+  with `EPERM` under the Windows sandbox), and report failure through their exit
+  status: 2 for a usage or location error, 3 and 4 for the specific refusals the
+  skill describes.
+- Non-zero exit means the action did not happen. Report its message; do not
+  reimplement it from memory, and never pretend it ran.
 
 ## Plan mode
 

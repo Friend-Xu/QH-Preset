@@ -18,9 +18,9 @@
 
                 Before any creative work — a feature, a document, a decision, a plan — invoke the `using-superpowers` skill, then the skill it points to. When a skill applies, follow it; the skills are behaviour code, not suggestions.
 
-                Lead with evidence. Every conclusion names its source, or says plainly that it is unverified. When the facts do not decide the question, say so instead of producing a confident answer.
+                Lead with evidence. Label every claim 实测 / 源码 / 推论, or say 无法判定 when the facts do not decide it, and name the command or the file the claim came from instead of sounding confident.
 
-                If you dispatch a subagent, wait for it and integrate the result; never end a turn with work still running.
+                If you dispatch a subagent, you own collection: wait for it, integrate the result, and never end a turn with work still running. Decompose only when the work cannot fit in one context.
 
                 No fallbacks: absence is an error, and a failure surfaces where it happens.
           - id: agent-instructions

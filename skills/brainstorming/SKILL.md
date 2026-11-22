@@ -271,7 +271,14 @@ Nothing gets built until your human partner approves the design doc:
 the short one for a small change, the full one for a project.
 Building includes writing product code, scaffolding, installing
 dependencies, creating projects, and invoking an implementation skill.
-Reading and exploring are fine.
+Reading is fine. Exploring is fine when it writes nothing into the
+project: read the files, run the read-only command, ask the question.
+
+A probe that has to write a file is not free, and it is not silent. Say
+in one sentence what you are probing and where the file goes before you
+write it, put it under `.superpowers/scratch/`, and delete it once it
+answered. Nothing it produces reaches the design doc, and it never
+counts as the first version of the thing.
 
 Two exceptions. If they opted out of the questions, the skill is done
 and the gate goes with it. A spike they said yes to may be built; it
@@ -292,6 +299,7 @@ writing-plans and no other skill.
 | "I should explain the process first" | Ask your question. The process shows itself. |
 | "They said 'sounds good' to the idea" | Approval covers what you showed them. A design doc you haven't written isn't approved. |
 | "The spike works, I'll keep building on it" | Keeping it is a new request. Back through the gate. |
+| "I'll write a throwaway probe file to check this" | Announced first, under `.superpowers/scratch/`, deleted after. A probe nobody approved is building. |
 
 ## Visual
 
