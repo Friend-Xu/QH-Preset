@@ -14,25 +14,40 @@
 
 ## 装与卸
 
-```powershell
-# 装（在本会话里由 agent 调用 plugin_manager；手工安装走 插件 → 添加插件 → 选本目录）
-# target = D:\WorkSpace\PRD-OS\QH-Preset
-# 卸
-# plugin_manager action=remove_bundle target=@quanheng/preset
+**从 GitHub 装（推荐）**——装成 profile 里的副本，与本机任何目录无关：
+
+```text
+plugin_manager action=install_bundle target=github:Friend-Xu/QH-Preset#<commit>
 ```
 
-安装会改写 profile（`D:\Agents\.dsh\profiles\web`）的依赖与 bundle 清单；卸载即回滚。装完**新会话**才生效。改了 `hooks/` 的源码需要重启 DSH：preset 里的插件不受 HMR 管理，重组合会返回 `application: restart-required`；只改 `.qh/instincts/*.md` 不用重启。
+图形界面等价：设置 → 插件 → 添加插件 → **安装第三方插件** → 「包名或地址」粘同一串。`<commit>` 填某个提交的完整 sha（钉住版本）或分支名 `master`（跟最新）。
+
+**从本地目录装（改自己这份仓库时用）**——装成链接，仓库改动直接生效，不必重装：
+
+```text
+plugin_manager action=install_bundle target=<本仓库目录的绝对路径>
+```
+
+**卸载**：
+
+```text
+plugin_manager action=remove_bundle target=@quanheng/preset
+```
+
+安装会改写 profile 的依赖与组合清单（`$DSH_HOME/profiles/<profile>/`，默认 `web`）；卸载即回滚。装完**新会话**才生效。改了 `hooks/` 的源码需要重启 DSH：preset 里的插件不受 HMR 管理，重组合会返回 `application: restart-required`；只改 `.qh/instincts/*.md` 不用重启。
+
+**更新**：GitHub 装的先卸载、再用新的 `<commit>` 装；本地目录装的改完仓库、重启 DSH 即可。
 
 ## 三条必须知道的约束
 
 1. **仓库是唯一真相。** 在 设置 → Agent 预设 里编辑 `quanheng` 会写进 profile 的 `cordis.patch.yml`，按行 id 覆盖本 bundle 的 `config.plugins`。两边一旦分叉，以仓库为准：删掉那条覆盖，或重装本 bundle。
-2. **不要移动本目录。** 安装以 link 方式挂到 profile；改名或移动会让依赖失效，必须重装。
+2. **只有"本地目录安装"会被目录位置绑住。** 那种方式以链接挂到 profile，仓库改名或移动就得重装；从 GitHub 装的是副本，仓库挪走也照常运行——代价是仓库改动不再自动进入已装版本，要按上面的"更新"走一遍。
 3. **helper 用 `node` 调用。** 技能里的 `scripts/*.mjs` 是 Node 模块，形如 `node <技能目录绝对路径>/task-brief.mjs PLAN_FILE 2`。它们不用管道捕获子进程输出（受限沙箱下会 EPERM），失败以退出码 2/3/4 报告（`find-polluter` 用 1/2/3）。跑不起来就如实报告，不许假装执行。
 
 ## 目录
 
 ```
-package.json               @quanheng/preset（不设 files 白名单：skills 与 hooks 必须随包）
+package.json               @quanheng/preset（不设 files 白名单：skills 与 hooks 必须随包；代价是从 Git 安装时 vendor/、tests/、scripts/ 也会一起复制过去，运行时只用 skills/ 与 hooks/）
 cordis.patch.yml           preset-quanheng 的完整声明（含四条不变量与 hooks 行）
 skills/                    15 个技能；using-superpowers/references/dsh-tools.md 是本部署的工具映射
 skills/qh-judgment/        证据标签、审查分级、委派契约、instincts 提升契约（提炼自 ECC）
