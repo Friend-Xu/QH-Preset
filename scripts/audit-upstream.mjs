@@ -5,9 +5,9 @@
 // `vendor/` is the evidence this bundle is derived from, and `docs/UPSTREAM.md`
 // is the prose account of what was changed. Prose alone cannot fail: a file can
 // be dropped, or ported, with no row anywhere and nobody notices until someone
-// diffs the two trees by hand — which is what v0.3.1 replaced, because `diff` on
-// this host is the `Compare-Object` alias and `diff -r` prints two directory
-// names without error.
+// diffs the two trees by hand — which is what this ledger replaced, because
+// `diff` on this host is the `Compare-Object` alias and `diff -r` prints two
+// directory names without error.
 //
 // `docs/upstream-ledger.json` holds one entry per vendored file (a subtree may be
 // covered by one entry whose path ends with `/`). One disposition needs no entry:

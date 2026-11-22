@@ -18,15 +18,15 @@
 
 ```text
 # 会话里，由 agent 调工具
-plugin_manager action=install_bundle target=github:Friend-Xu/QH-Preset#v0.3.1
+plugin_manager action=install_bundle target=github:Friend-Xu/QH-Preset#v0.1.0
 
 # 命令行（cmd / PowerShell），先停掉 DSH
-dsh plugin --profile web add github:Friend-Xu/QH-Preset#v0.3.1
+dsh plugin --profile web add github:Friend-Xu/QH-Preset#v0.1.0
 ```
 
-图形界面等价：设置 → 插件 → 添加插件 → **安装第三方插件** → 「包名或地址」粘 `github:Friend-Xu/QH-Preset#v0.3.1`。
+图形界面等价：设置 → 插件 → 添加插件 → **安装第三方插件** → 「包名或地址」粘 `github:Friend-Xu/QH-Preset#v0.1.0`。
 
-`#` 后面是 **git tag**，tag 名 = `v` + `package.json` 的 `version`（现在两者都是 `0.3.1`）。已发布的版本看仓库的 Tags 页；换成 `master` 跟的是未发布的最新提交，内容会漂，不推荐。
+`#` 后面是 **git tag**，tag 名 = `v` + `package.json` 的 `version`（现在两者都是 `0.1.0`）。已发布的版本看仓库的 Tags 页；换成 `master` 跟的是未发布的最新提交，内容会漂，不推荐。
 
 `dsh plugin --profile <name> <pnpm 参数>` 是 DSH 自带的插件命令：参数原样转给 profile 目录里的 pnpm，同时把 `package.json` 的依赖和 `dsh.profile.bundles` 两处一起对齐（和 GUI 的安装/卸载同一份实现）。别手改这两个地方，也别在 profile 里裸跑 pnpm。
 
@@ -91,13 +91,15 @@ tests/acceptance.md        M1–M9 验收记录
 
 ## 分批开关
 
+下表与 `docs/UPSTREAM.md` 里的 `v0.1` / `v0.2` / `v0.3` 是**开发批次编号**，不是发布版本；公开发布版本从 **0.1.0** 起（tag `v0.1.0`），发布规则见上面的「发布一个版本」。
+
 | 能力 | 状态 |
 |---|---|
-| preset + 8 技能 | 已开（v0.1） |
-| TDD、`qh-judgment`、`eval-harness`、门禁探测规则 | 已开（v0.2） |
-| helper 移植为 Node、会话断言、16 项自检 | 已开（v0.2） |
-| instinct hook（`.qh/instincts/` 常驻判断）、另外 4 个技能、20 项自检 | 已开（v0.3） |
-| 8 个文件的 BOM 清零、检查改为拒绝 BOM、上游账本与 `audit-upstream`、22 项自检 | 已开（v0.3.1） |
+| preset + 8 技能 | 已开（批次一） |
+| TDD、`qh-judgment`、`eval-harness`、门禁探测规则 | 已开（批次二） |
+| helper 移植为 Node、会话断言、16 项自检 | 已开（批次二） |
+| instinct hook（`.qh/instincts/` 常驻判断）、另外 4 个技能、20 项自检 | 已开（批次三） |
+| 8 个文件的 BOM 清零、检查改为拒绝 BOM、上游账本与 `audit-upstream`、22 项自检 | 已开（发布 0.1.0） |
 | 视觉伴生服务器 | **关闭**（不提供浏览器通道；要图就写 HTML 文件给路径） |
 | 从捕获里自动写规则 | **不做**：重复调用已有 `repeat-tool-reminder`，规则只从被提升的 instinct 来 |
 

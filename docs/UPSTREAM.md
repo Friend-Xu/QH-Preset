@@ -2,6 +2,8 @@
 
 本 bundle 是两份 MIT 项目的衍生作品。上游原样快照在 `vendor/`，本文件记录差量与取舍；`docs/upstream-ledger.json` 是它的机器可读部分——每个 vendor 文件一行处置——两者由 `node scripts/audit-upstream.mjs` 交叉校验。
 
+表的「版本」列里，`v0.1` / `v0.2` / `v0.3` 是**开发批次编号**，不是发布版本；`0.1.0` 是仓库的**第一个公开发布版本**（tag `v0.1.0`）。发布规则见 `README.md` 的「发布一个版本」。
+
 | 上游 | 版本 | 取证方式 | 本地快照 |
 |---|---|---|---|
 | Superpowers（obra/superpowers） | 7.0.2 | 源目录 `测试项目/superpowers-main`（package.json / .version-bump.json） | `vendor/superpowers/` |
@@ -24,14 +26,14 @@
 | 11 | v0.3 | 补装 `using-git-worktrees`、`finishing-a-development-branch`：删掉"原生工具 → git 回退"的阶梯与沙箱失败兜底；命令改 `pwsh`，目录一律用 `workdir` 参数而不是 `cd` | 两个技能正文 | 本 preset 没挂 worktree 工具（`@deepseek-ai/dsh-experimental-tool-worktree` 未被任何出厂 preset 引用），阶梯的第一级永远不存在；DSH 的 shell 调用不保留 `cd` |
 | 12 | v0.3 | 新增 `hooks/` 插件（`@quanheng/preset/hooks`） | 包内新目录 + patch 一行 | 让 `.qh/instincts/` 的项目判断在每次请求里生效，不必先加载技能。机制与取舍见 `docs/HOOKS.md` |
 | 13 | v0.3 | `resolveExecutable` 在 Windows 上先试可执行扩展名（`.exe/.cmd/.bat`），再试无扩展名 | `skills/subagent-driven-development/scripts/lib/exec.mjs` | 移植 `find-polluter` 时实测到的缺陷：`npm` 解析到 nodejs 目录下那个无扩展名的 sh shim，`CreateProcess` 跑不了它，而 ENOENT 被吞掉，于是"什么都没发生" |
-| 14 | v0.2（v0.3.1 补登） | `using-superpowers` 的技能路由表加两行：设计批准后 → `test-driven-development` 先走；任何结论、审查结论或完成声明 → `qh-judgment` | `skills/using-superpowers/SKILL.md` | 清单里的这两个技能在路由表里没有入口，只靠 description 匹配会漏触发。补登原因：v0.2 当时只记了"加 DSH 一行"（#4） |
-| 15 | v0.2（v0.3.1 补登） | 删掉"没有 bash 时用 `git log --oneline`、`git diff --stat`、`git diff -U10` 自己拼 review 包"的兜底 | `skills/subagent-driven-development/SKILL.md` | 它与 #3 移植的 helper 是同一能力的第二条路径，而 helper 在本机本来就能跑；留着会让"命令没跑起来"变成"用另一条路假装跑过"。补登原因：v0.2 当时只记了 helper 移植 |
-| 16 | v0.2（v0.3.1 补登） | `writing-good-tests.md` 里 `(superpowers:writing-skills)` 一处改成指令："跑一个新会话，看它实际做了什么" | `skills/test-driven-development/writing-good-tests.md` | #1 说的是只改命名空间，这处同时改了句式。改动本身是对的，但记录要如实。补登原因：v0.2 加装 TDD 时未记录 |
-| 17 | v0.3（v0.3.1 补登） | `writing-skills` 的部署清单从"提交并推到 fork / 考虑提 PR"换成三条本仓库的动作：与测试同一提交、改动记进本文件、跑 `check-preset` | `skills/writing-skills/SKILL.md` | 本仓库没有 fork 也没有 PR 流程，清单指向不存在的动作等于没有清单。补登原因：v0.3 移植时未记录 |
-| 18 | v0.3.1 | 去掉 8 个文件在 v0.1 批量改名时被写入的 UTF-8 BOM（`EF BB BF`）；`check-preset` 改为**拒绝** BOM，而不是在解析前抹掉它 | `skills/` 8 个文件、`scripts/check-preset.mjs` | `skills/writing-plans/SKILL.md` 的首行因此是 `\uFEFF---`。今天没坏只是因为 fs 层用 `TextDecoder` 解码会吃掉 BOM；`skill-filesystem` 在没有 fs 服务时走 `readFile(...,'utf8')`，那条路径不吃 BOM，而 `parseFrontmatter` 要求首行严格等于 `---`，于是这个技能会从技能目录里静默消失。负样本见 `tests/acceptance.md` |
-| 19 | v0.3.1 | 新增 `docs/upstream-ledger.json`（每个 vendor 文件一条处置）与 `scripts/audit-upstream.mjs`；`check-preset` 增加一项"账本覆盖每个 vendor 文件" | 两个新文件、`scripts/check-preset.mjs`、本文件 | 上一轮的核对靠人工 `diff` 完成，而 `diff` 在 PowerShell 里是 `Compare-Object` 的别名：`diff -r` 不报错，只打印两行目录名。于是"升级流程第 2 步"一直是空转的。账本把"每个上游文件都有去向"变成会失败的检查 |
+| 14 | v0.2（发布前补登） | `using-superpowers` 的技能路由表加两行：设计批准后 → `test-driven-development` 先走；任何结论、审查结论或完成声明 → `qh-judgment` | `skills/using-superpowers/SKILL.md` | 清单里的这两个技能在路由表里没有入口，只靠 description 匹配会漏触发。补登原因：v0.2 当时只记了"加 DSH 一行"（#4） |
+| 15 | v0.2（发布前补登） | 删掉"没有 bash 时用 `git log --oneline`、`git diff --stat`、`git diff -U10` 自己拼 review 包"的兜底 | `skills/subagent-driven-development/SKILL.md` | 它与 #3 移植的 helper 是同一能力的第二条路径，而 helper 在本机本来就能跑；留着会让"命令没跑起来"变成"用另一条路假装跑过"。补登原因：v0.2 当时只记了 helper 移植 |
+| 16 | v0.2（发布前补登） | `writing-good-tests.md` 里 `(superpowers:writing-skills)` 一处改成指令："跑一个新会话，看它实际做了什么" | `skills/test-driven-development/writing-good-tests.md` | #1 说的是只改命名空间，这处同时改了句式。改动本身是对的，但记录要如实。补登原因：v0.2 加装 TDD 时未记录 |
+| 17 | v0.3（发布前补登） | `writing-skills` 的部署清单从"提交并推到 fork / 考虑提 PR"换成三条本仓库的动作：与测试同一提交、改动记进本文件、跑 `check-preset` | `skills/writing-skills/SKILL.md` | 本仓库没有 fork 也没有 PR 流程，清单指向不存在的动作等于没有清单。补登原因：v0.3 移植时未记录 |
+| 18 | 0.1.0 | 去掉 8 个文件在 v0.1 批量改名时被写入的 UTF-8 BOM（`EF BB BF`）；`check-preset` 改为**拒绝** BOM，而不是在解析前抹掉它 | `skills/` 8 个文件、`scripts/check-preset.mjs` | `skills/writing-plans/SKILL.md` 的首行因此是 `\uFEFF---`。今天没坏只是因为 fs 层用 `TextDecoder` 解码会吃掉 BOM；`skill-filesystem` 在没有 fs 服务时走 `readFile(...,'utf8')`，那条路径不吃 BOM，而 `parseFrontmatter` 要求首行严格等于 `---`，于是这个技能会从技能目录里静默消失。负样本见 `tests/acceptance.md` |
+| 19 | 0.1.0 | 新增 `docs/upstream-ledger.json`（每个 vendor 文件一条处置）与 `scripts/audit-upstream.mjs`；`check-preset` 增加一项"账本覆盖每个 vendor 文件" | 两个新文件、`scripts/check-preset.mjs`、本文件 | 上一轮的核对靠人工 `diff` 完成，而 `diff` 在 PowerShell 里是 `Compare-Object` 的别名：`diff -r` 不报错，只打印两行目录名。于是"升级流程第 2 步"一直是空转的。账本把"每个上游文件都有去向"变成会失败的检查 |
 
-**与上游字节相同的**：`implementer-prompt.md`、`builder-check-prompt.md`、`code-reviewer.md` 三份 prompt 模板；其余 prompt 模板只改了 helper 调用那一行。技能正文的方法论与 Red Flags 表，除上表逐条列出的改动外没有动——**上表是完整清单**，这一点在 v0.3.1 之前并不成立：当时有 4 处改动没进表，现在按 #14–#17 补登。
+**与上游字节相同的**：`implementer-prompt.md`、`builder-check-prompt.md`、`code-reviewer.md` 三份 prompt 模板；其余 prompt 模板只改了 helper 调用那一行。技能正文的方法论与 Red Flags 表，除上表逐条列出的改动外没有动——**上表是完整清单**，这一点在发布 0.1.0 之前并不成立：当时有 4 处改动没进表，现在按 #14–#17 补登。
 
 ## 差量账本
 
@@ -60,7 +62,7 @@ ECC `rules/common/` 里还有 `development-workflow.md`、`testing.md`、`patter
 | E4 | `ecc:*` agent 名单、`Agent(subagent_type:)` 调用 | **不搬** | 本版本 subagent 不接受 per-child persona，角色只能进 prompt |
 | E5 | GitHub 代码检索 → Context7 → Exa 的强制调研顺序 | **不搬** | 依赖本机没有的工具；"先查已有方案"已在 persona 里 |
 | E6 | `/eval` slash command、`.claude/evals/` 布局 | **换成** `docs/evals/` + `.qh/evals/` | 本部署没有 slash command 插件；`.claude/` 是别的 harness 的目录 |
-| E7 | `development-workflow.md` 整篇 | **每一步已有去向** | 调研顺序 → E5；`planner`/`tdd-guide` agent → E4；80% 覆盖率 → E3；commit 与 pre-review → E13。文件本身此前从未被登记，做核对的人会以为漏了一个（v0.3.1 按文件补登） |
+| E7 | `development-workflow.md` 整篇 | **每一步已有去向** | 调研顺序 → E5；`planner`/`tdd-guide` agent → E4；80% 覆盖率 → E3；commit 与 pre-review → E13。文件本身此前从未被登记，做核对的人会以为漏了一个（发布前按文件补登） |
 | E8 | `coding-style.md` 整篇 | **大部分已有去向** | 不可变、KISS/DRY/YAGNI、错误处理、边界校验 → `$DSH_HOME/AGENTS.md` §1 §4 §5；文件行数与嵌套 → E3 不搬；命名约定与"代码味道"清单 → 不搬（无来源，且语言相关） |
 | E9 | `testing.md` 整篇 | **部分已有去向** | TDD 循环 → `test-driven-development`（Superpowers）；80% 覆盖率 → E3 不搬；`tdd-guide` agent → E4 不搬；AAA 结构与测试命名 → 不搬（通用常识，无来源） |
 | E10 | `patterns.md` 整篇 | **不搬** | skeleton 项目的"多个 agent 并行评估"依赖 E4 的名单；Repository Pattern 与响应 envelope 是具体工程选择，本仓库的对应原则在 `$DSH_HOME/AGENTS.md` §1（接口两侧不互知） |
