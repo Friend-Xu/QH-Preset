@@ -1,4 +1,4 @@
-﻿# Handling a Report That Isn't DONE
+# Handling a Report That Isn't DONE
 
 Part of subagent-driven-development.
 

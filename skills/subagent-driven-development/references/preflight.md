@@ -1,4 +1,4 @@
-﻿# The Pre-flight Scan
+# The Pre-flight Scan
 
 Part of subagent-driven-development. Run it once, before
 dispatching Task 1.

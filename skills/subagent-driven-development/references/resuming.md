@@ -1,4 +1,4 @@
-﻿# Resuming From an Existing Ledger
+# Resuming From an Existing Ledger
 
 Part of subagent-driven-development. This plan's workspace
 already has a ledger at `<workspace>/progress.md`.

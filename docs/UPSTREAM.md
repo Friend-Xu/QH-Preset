@@ -11,7 +11,7 @@
 
 | # | 版本 | 改动 | 范围 | 理由 |
 |---|---|---|---|---|
-| 1 | v0.1 | 去掉技能引用的命名空间：`superpowers:<skill>` → `<skill>` | 已装的 11 个技能中的交叉引用 | DSH 的技能名不带命名空间；不装 JS 钩子也能互相指到 |
+| 1 | v0.1 | 去掉技能引用的命名空间：`superpowers:<skill>` → `<skill>` | v0.1 已装的 8 个技能中的交叉引用 | DSH 的技能名不带命名空间；不装 JS 钩子也能互相指到 |
 | 2 | v0.1 | 关闭视觉伴生：删除 `brainstorming/visual-companion.md` 与 `scripts/`；把 `## Visual Companion` 节改为"本部署不提供" | `skills/brainstorming/` | 需要 25KB Node 服务器 + 216 行 bash 启动器；当前工作以文字决策为主，收益不足以维护一套进程管理 |
 | 3 | v0.2 | 6 个 helper 由 bash 移植为 Node（`.mjs`），调用方式改为 `node <绝对路径>/<name>.mjs <参数>` | `executing-plans/scripts/`、`subagent-driven-development/scripts/` | 本机 `bash` 不在 PATH（只有 Git for Windows 的绝对路径），且管道捕获在受限沙箱下必然 EPERM。语义、参数、退出码、输出格式逐项对齐上游 |
 | 4 | v0.1 | 新增 `using-superpowers/references/dsh-tools.md`，并在 "Platform Adaptation" 列表加 DSH 一行 | `skills/using-superpowers/` | 上游按 harness 提供动作→工具映射，本文件就是 DSH 的适配层；v0.2 补上子 agent 不加载技能、helper 用 node 调用两节 |
@@ -24,12 +24,17 @@
 | 11 | v0.3 | 补装 `using-git-worktrees`、`finishing-a-development-branch`：删掉"原生工具 → git 回退"的阶梯与沙箱失败兜底；命令改 `pwsh`，目录一律用 `workdir` 参数而不是 `cd` | 两个技能正文 | 本 preset 没挂 worktree 工具（`@deepseek-ai/dsh-experimental-tool-worktree` 未被任何出厂 preset 引用），阶梯的第一级永远不存在；DSH 的 shell 调用不保留 `cd` |
 | 12 | v0.3 | 新增 `hooks/` 插件（`@quanheng/preset/hooks`） | 包内新目录 + patch 一行 | 让 `.qh/instincts/` 的项目判断在每次请求里生效，不必先加载技能。机制与取舍见 `docs/HOOKS.md` |
 | 13 | v0.3 | `resolveExecutable` 在 Windows 上先试可执行扩展名（`.exe/.cmd/.bat`），再试无扩展名 | `skills/subagent-driven-development/scripts/lib/exec.mjs` | 移植 `find-polluter` 时实测到的缺陷：`npm` 解析到 nodejs 目录下那个无扩展名的 sh shim，`CreateProcess` 跑不了它，而 ENOENT 被吞掉，于是"什么都没发生" |
+| 14 | v0.2（v0.3.1 补登） | `using-superpowers` 的技能路由表加两行：设计批准后 → `test-driven-development` 先走；任何结论、审查结论或完成声明 → `qh-judgment` | `skills/using-superpowers/SKILL.md` | 清单里的这两个技能在路由表里没有入口，只靠 description 匹配会漏触发。补登原因：v0.2 当时只记了"加 DSH 一行"（#4） |
+| 15 | v0.2（v0.3.1 补登） | 删掉"没有 bash 时用 `git log --oneline`、`git diff --stat`、`git diff -U10` 自己拼 review 包"的兜底 | `skills/subagent-driven-development/SKILL.md` | 它与 #3 移植的 helper 是同一能力的第二条路径，而 helper 在本机本来就能跑；留着会让"命令没跑起来"变成"用另一条路假装跑过"。补登原因：v0.2 当时只记了 helper 移植 |
+| 16 | v0.2（v0.3.1 补登） | `writing-good-tests.md` 里 `(superpowers:writing-skills)` 一处改成指令："跑一个新会话，看它实际做了什么" | `skills/test-driven-development/writing-good-tests.md` | #1 说的是只改命名空间，这处同时改了句式。改动本身是对的，但记录要如实。补登原因：v0.2 加装 TDD 时未记录 |
+| 17 | v0.3（v0.3.1 补登） | `writing-skills` 的部署清单从"提交并推到 fork / 考虑提 PR"换成三条本仓库的动作：与测试同一提交、改动记进本文件、跑 `check-preset` | `skills/writing-skills/SKILL.md` | 本仓库没有 fork 也没有 PR 流程，清单指向不存在的动作等于没有清单。补登原因：v0.3 移植时未记录 |
+| 18 | v0.3.1 | 去掉 8 个文件在 v0.1 批量改名时被写入的 UTF-8 BOM（`EF BB BF`）；`check-preset` 改为**拒绝** BOM，而不是在解析前抹掉它 | `skills/` 8 个文件、`scripts/check-preset.mjs` | `skills/writing-plans/SKILL.md` 的首行因此是 `\uFEFF---`。今天没坏只是因为 fs 层用 `TextDecoder` 解码会吃掉 BOM；`skill-filesystem` 在没有 fs 服务时走 `readFile(...,'utf8')`，那条路径不吃 BOM，而 `parseFrontmatter` 要求首行严格等于 `---`，于是这个技能会从技能目录里静默消失。负样本见 `tests/acceptance.md` |
 
-**没有改的**：技能正文的方法论、HARD-GATE（除 #5 那一处）、Red Flags 表、prompt 模板。它们是对照价值所在。
+**与上游字节相同的**：`implementer-prompt.md`、`builder-check-prompt.md`、`code-reviewer.md` 三份 prompt 模板；其余 prompt 模板只改了 helper 调用那一行。技能正文的方法论与 Red Flags 表，除上表逐条列出的改动外没有动——**上表是完整清单**，这一点在 v0.3.1 之前并不成立：当时有 4 处改动没进表，现在按 #14–#17 补登。
 
 ## 刻意不搬的 ECC 规则
 
-ECC `rules/common/` 里还有 `testing.md`、`patterns.md`、`performance.md`、`security.md`、`coding-style.md`、`git-workflow.md`、`hooks.md`。逐条取舍：
+ECC `rules/common/` 里还有 `development-workflow.md`、`testing.md`、`patterns.md`、`performance.md`、`security.md`、`coding-style.md`、`git-workflow.md`、`hooks.md` 八个文件（`agents.md` 与 `code-review.md` 见上表 #6）。逐条取舍：
 
 | ECC 规则 | 处理 | 原因 |
 |---|---|---|
@@ -39,6 +44,7 @@ ECC `rules/common/` 里还有 `testing.md`、`patterns.md`、`performance.md`、
 | `ecc:*` agent 名单、`Agent(subagent_type:)` 调用 | **不搬** | 本版本 subagent 不接受 per-child persona，角色只能进 prompt |
 | GitHub 代码检索 → Context7 → Exa 的强制调研顺序 | **不搬** | 依赖本机没有的工具；"先查已有方案"已在 persona 里 |
 | `/eval` slash command、`.claude/evals/` 布局 | **换成** `docs/evals/` + `.qh/evals/` | 本部署没有 slash command 插件；`.claude/` 是别的 harness 的目录 |
+| `development-workflow.md` 整篇 | **每一步已有去向**：调研顺序 → "强制调研顺序"行；`planner`/`tdd-guide` agent → "`ecc:` agent 名单"行；80% 覆盖率 → 阈值行；commit 与 pre-review → `git-workflow.md` 行 | 它每一步都被本表某一行判过了，但**文件本身**此前从未被登记，做核对的人会以为漏了一个。v0.3.1 按文件补登 |
 
 ## 技能取舍
 

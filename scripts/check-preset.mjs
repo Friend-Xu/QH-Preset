@@ -103,11 +103,11 @@ function helperFiles() {
 
 /** Body text without the YAML frontmatter. */
 function skillBody(file) {
-  return readFileSync(file, 'utf8').replace(/^\uFEFF/, '').replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '')
+  return readFileSync(file, 'utf8').replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '')
 }
 
 function skillFrontmatter(file) {
-  const match = /^---\r?\n([\s\S]*?)\r?\n---/.exec(readFileSync(file, 'utf8').replace(/^\uFEFF/, ''))
+  const match = /^---\r?\n([\s\S]*?)\r?\n---/.exec(readFileSync(file, 'utf8'))
   return match === null ? null : match[1]
 }
 
@@ -162,6 +162,25 @@ check('skills directory holds exactly the expected skills', () => {
   assert(missing.length === 0, `missing skills: ${missing.join(', ')}`)
   assert(extra.length === 0, `unexpected skills: ${extra.join(', ')}`)
   return `${dirs.length} skills`
+})
+
+check('no shipped text file starts with a byte-order mark', () => {
+  // A BOM turns a skill's first line into `\uFEFF---`, which the loader reads as
+  // "no frontmatter": the skill leaves the catalog and only a log line says so.
+  // Today the fs layer's TextDecoder strips the BOM, so the defect stays hidden
+  // and reappears the moment the file is read another way. Reject it here
+  // instead of stripping it in the parsers below.
+  const files = [
+    ...entries(join(root, 'skills')),
+    ...existsSync(join(root, 'hooks')) ? entries(join(root, 'hooks')) : [],
+    ...entries(join(root, 'scripts')),
+  ].filter(file => ['.md', '.mjs', '.js'].includes(extname(file)))
+  for (const file of files) {
+    const bytes = readFileSync(file)
+    assert(!(bytes.length >= 3 && bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF),
+      `${file} starts with a byte-order mark (EF BB BF), which the skill loader reads as "no frontmatter"`)
+  }
+  return `${files.length} files`
 })
 
 check('every SKILL.md carries matching frontmatter and stays under 500 lines', () => {

@@ -1,4 +1,4 @@
-﻿# Gemini CLI Tool Mapping
+# Gemini CLI Tool Mapping
 
 Skills speak in actions ("dispatch a subagent", "create a todo", "read a file"). On Gemini CLI these resolve to the tools below.
 

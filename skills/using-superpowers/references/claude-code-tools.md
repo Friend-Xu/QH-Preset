@@ -1,4 +1,4 @@
-﻿# Claude Code Tool Notes
+# Claude Code Tool Notes
 
 Claude Code is the reference harness: skills speak its vocabulary
 (`Agent` for a subagent dispatch, todos, `Skill`). These notes cover the

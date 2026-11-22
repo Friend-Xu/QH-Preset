@@ -60,8 +60,11 @@ are Node modules and need nothing but `node` on `PATH`:
   with `EPERM` under the Windows sandbox), and report failure through their exit
   status: 2 for a usage or location error, 3 and 4 for the specific refusals the
   skill describes.
-- Non-zero exit means the action did not happen. Report its message; do not
-  reimplement it from memory, and never pretend it ran.
+- Exit 0 means the action happened. `find-polluter.mjs` is the exception on the
+  other side: its exit 1 means it **found** the polluter, which is the success
+  case. Every other non-zero exit — 2 for a usage or location error, 3 and 4 for
+  the refusals the skill describes — means the action did not happen. Report the
+  message; do not reimplement the helper from memory, and never pretend it ran.
 
 ## Plan mode
 

@@ -1,4 +1,4 @@
-﻿# "Cannot Verify From Diff" Items
+# "Cannot Verify From Diff" Items
 
 Part of subagent-driven-development.
 

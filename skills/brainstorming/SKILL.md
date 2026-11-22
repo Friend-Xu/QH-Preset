@@ -309,6 +309,7 @@ and never claim to have opened a browser tab.
 
 Show, don't tell still applies inside the conversation: write a few lines
 of what they would see, or sketch two or three options side by side in
-text. When a decision genuinely needs a rendered page, write a
-self-contained HTML file into the project and tell your human partner its
-path so they can open it themselves. Do not start a server for it.
+text. When a decision genuinely needs a rendered page, that page is a
+probe: announce it, write it under `.superpowers/scratch/` the way the
+gate above requires, and give your human partner the path so they can
+open it. Delete it once it answered. Do not start a server for it.

@@ -1,4 +1,4 @@
-﻿# Batching Small Same-Shape Work
+# Batching Small Same-Shape Work
 
 Part of subagent-driven-development.
 
