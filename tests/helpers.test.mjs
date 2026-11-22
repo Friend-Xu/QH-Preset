@@ -309,6 +309,19 @@ test('task-done propagates a failing command and records nothing', () => {
   assert.equal(existsSync(join(repo, '.superpowers', 'sdd', 'plan', 'progress.md')), false)
 })
 
+test('task-done runs a .cmd test command through the interpreter', { skip: process.platform !== 'win32' }, () => {
+  const repo = fixture()
+  const base = git(repo, ['rev-parse', 'HEAD'])
+  const tools = join(repo, 'tools dir')
+  mkdirSync(tools, { recursive: true })
+  writeFileSync(join(tools, 'check.cmd'), '@echo off\r\necho checked %1\r\nexit /b 0\r\n')
+  const result = run(repo, taskDone, ['docs/plan.md', '1', base, '--', join(tools, 'check.cmd'), 'one arg'])
+  assert.equal(result.status, 0)
+  const ledger = readFileSync(join(repo, '.superpowers', 'sdd', 'plan', 'progress.md'), 'utf8')
+  // cmd keeps the quotes it was given, so the shim echoes them back verbatim.
+  assert.match(ledger, /→ checked "one arg"\)$/m)
+})
+
 test('helpers reject bad usage and a missing plan with exit 2', () => {
   const repo = fixture()
   const workspace = run(repo, sddWorkspace, [])

@@ -9,8 +9,7 @@
 import { appendFileSync, closeSync, existsSync, openSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { spawnSync } from 'node:child_process'
-import { lastNonEmptyLine, resolveExecutable, runCaptured, tailLines } from '../../subagent-driven-development/scripts/lib/exec.mjs'
+import { lastNonEmptyLine, resolveExecutable, runCaptured, spawnWithStdio, tailLines } from '../../subagent-driven-development/scripts/lib/exec.mjs'
 import { headCommit, repoRoot, revisionExists } from '../../subagent-driven-development/scripts/sdd-repo.mjs'
 import { resolveWorkspace } from '../../subagent-driven-development/scripts/sdd-workspace.mjs'
 
@@ -65,19 +64,14 @@ export function finishTask(planFile, n, base, command) {
 
   const fd = openSync(log, 'w')
   let status
-  let failure
   try {
-    const result = spawnSync(executable, command.slice(1), {
+    status = spawnWithStdio(executable, command.slice(1), {
       cwd: process.cwd(),
       stdio: ['ignore', fd, fd],
-      windowsHide: true,
-    })
-    status = result.status
-    failure = result.error
+    }).status
   } finally {
     closeSync(fd)
   }
-  if (failure !== undefined) throw failure
 
   const output = readFileSync(log, 'utf8')
   for (const line of tailLines(output, 5)) process.stdout.write(`${line}\n`)

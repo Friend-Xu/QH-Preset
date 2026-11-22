@@ -42,7 +42,7 @@ docs/UPSTREAM.md           上游版本、逐条改动、刻意不搬的规则
 docs/evals/                eval 定义（能力 / 回归）与 v0.1 负样本
 scripts/check-preset.mjs   结构契约自检（16 项）
 scripts/assert-session.mjs 会话日志断言：技能顺序、写入门禁、工具错误
-tests/helpers.test.mjs     helper 行为测试（19 例，node:test）
+tests/helpers.test.mjs     helper 行为测试（20 例，node:test）
 tests/acceptance.md        M1–M5 验收记录
 ```
 
@@ -60,7 +60,7 @@ tests/acceptance.md        M1–M5 验收记录
 
 ```powershell
 node scripts/check-preset.mjs      # 16 项结构契约
-node --test                        # 19 例 helper 行为测试
+node --test                        # 20 例 helper 行为测试
 node scripts/assert-session.mjs <session.v4.jsonl.zstd> --preset quanheng `
   --skill-order using-superpowers,brainstorming --no-write-before writing-plans --no-tool-errors
 ```

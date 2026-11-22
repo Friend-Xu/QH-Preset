@@ -60,6 +60,33 @@ export function runInherited(command, args, { cwd = process.cwd() } = {}) {
   return result.status
 }
 
+/**
+ * Spawn with an already-opened stdio array (file handles, never pipes).
+ *
+ * A `.cmd`/`.bat` shim - which is what `npm`, `pnpm` and most tool wrappers are
+ * on Windows - cannot be spawned directly: CreateProcess rejects a batch file and
+ * Node reports EINVAL. Those go through the command interpreter instead, with the
+ * command line quoted here because the interpreter parses it, not the CRT.
+ */
+export function spawnWithStdio(executable, args, { cwd = process.cwd(), stdio }) {
+  if (!(process.platform === 'win32' && /\.(cmd|bat)$/i.test(executable))) {
+    const result = spawnSync(executable, args, { cwd, stdio, windowsHide: true })
+    if (result.error !== undefined && result.error.code !== 'ENOENT') throw result.error
+    return result
+  }
+  for (const argument of args) {
+    if (argument.includes('"')) {
+      throw new Error(`cannot pass an argument containing a double quote to ${executable}`)
+    }
+  }
+  const line = [executable, ...args]
+    .map(part => (/[\s&|<>^()]/.test(part) ? `"${part}"` : part))
+    .join(' ')
+  const result = spawnSync(line, { cwd, stdio, windowsHide: true, shell: true })
+  if (result.error !== undefined) throw result.error
+  return result
+}
+
 /** Run a command with its output discarded, returning only its exit status. */
 export function runSilent(command, args, { cwd = process.cwd() } = {}) {
   const result = spawnSync(command, args, { cwd, stdio: 'ignore', windowsHide: true })

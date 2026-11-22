@@ -10,8 +10,8 @@
 | ② | ECC 规则只有快照、没有落地 | 提炼为 `qh-judgment`（证据四档、审查分级、委派契约） | 自检"提炼技能标注 origin: ECC" + 技能内相对链接可解析 | **通过** |
 | ③ | `eval-harness` 未移植 | 提炼为 `eval-harness`，判分器映射到 DSH 工具 | 同上 | **通过** |
 | ④ | 门禁被一次性探测文件绕过（seq 68/71） | `brainstorming` HARD-GATE 明确"探索不写项目文件"，落文件探测须先声明并在 `.superpowers/scratch/` 用完删除，Red Flags 加一行 | `docs/evals/preset-gate-announcement.md` 的负样本 + 待跑的 M4b | **负样本通过；M4b 待跑** |
-| ⑤ | 6 个 helper 是 bash，本机跑不起来 | 移植为 Node `.mjs`，语义/参数/退出码/输出对齐；13 处调用点改写 | `node --test` 19 例 | **通过（19/19）** |
-| ⑥ | 自检只查结构不查行为 | `check-preset` 扩到 16 项；新增 `assert-session.mjs` 会话日志断言；19 例 helper 行为测试 | 两个命令全绿 | **通过** |
+| ⑤ | 6 个 helper 是 bash，本机跑不起来 | 移植为 Node `.mjs`，语义/参数/退出码/输出对齐；13 处调用点改写 | `node --test` 20 例 | **通过（20/20）** |
+| ⑥ | 自检只查结构不查行为 | `check-preset` 扩到 16 项；新增 `assert-session.mjs` 会话日志断言；20 例 helper 行为测试 | 两个命令全绿 | **通过** |
 
 ## 静态与行为检查（2026-11-22，本轮实测）
 
@@ -20,11 +20,11 @@ $ node scripts/check-preset.mjs
 16 passed, 0 failed
   （行/分组/isolate/五字段、技能集与 frontmatter、链接可解析、helper 提及可解析且无 bash scripts/、
     无上游命名空间与家目录路径、helper 不管道捕获、import 可解析、persona 四条不变量、
-    dsh-tools 动作映射、origin: ECC、包元数据与技能根、单文件 ≤32KB — 42 files / 206 KB）
+    dsh-tools 动作映射、origin: ECC、包元数据与技能根、单文件 ≤32KB — 42 files / 207 KB）
 
 $ node --test
-19 passed, 0 failed  （sdd-repo 3、workspace 3、task-brief 5、review-package 2、
-                      task-start 1、task-done 2、用法 1、无残留 1、无残留写入 1）
+20 passed, 0 failed  （sdd-repo 3、workspace 3、task-brief 5、review-package 2、task-start 1、
+                      task-done 3（含 .cmd）、用法 1、无残留 1）
 ```
 
 `node --test` 用 `tests/.tmp/` 里的临时 git 仓库做 fixture，跑完删除；`GIT_CEILING_DIRECTORIES` 限定 git 不向上找到本包仓库，否则"不在仓库内"那条用例会因为错误原因通过。
@@ -87,6 +87,7 @@ seq 68/71 是一次性探测页（v0.1 的偏离）；seq 159 是缺失的 TDD �
 
 ## 本轮偏离与修正记录
 
+- **`task-done` 跑不了 `.cmd` 测试命令（自查发现并已修）**：第一版把解析出的可执行文件直接交给 `spawnSync`。Windows 上 `npm`、`pnpm` 这类包装都是 `.cmd`，CreateProcess 拒绝批处理文件，Node 报 `EINVAL`（实测 `status: null, error.code: 'EINVAL'`），也就是最常见的 `npm test` 会失败。修法：`.cmd`/`.bat` 经命令解释器执行（`shell: true` + 自行引号化，解释器解析命令行而不是 CRT），并在 `tests/helpers.test.mjs` 增加一条真实 `.cmd`（路径含空格）的成功用例。参数里出现双引号时报错而不是猜。
 - `scripts/assert-session.mjs` 与 Batch B 一起提交（原计划放 Batch C）：`check-preset` 的"helper 提及可解析"检查引用它，若分两批提交，Batch B 的仓库状态会自检失败。
 - `.gitattributes` 从 `skills/**/scripts/*.mjs` 改为 `*.mjs`：前者匹配不到 `scripts/lib/` 子目录，`git check-attr` 显示 `eol: unspecified`。
 - 计划里"自己驱动 GUI 起 2 个新会话"未做成：`http://127.0.0.1:3080` 对 Playwright 返回 401，要求登录令牌（本会话环境里没有，且不读取 `.credentials.yaml`）。当前会话的 `DSH_*` 环境变量只有 HOME/PROFILE/SESSION_ID/URL。因此 M3/M4b 转由负责人在已登录的 GUI 里跑，判分仍由 `assert-session.mjs` 执行。

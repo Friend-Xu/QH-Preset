@@ -11,7 +11,7 @@ Write: the command, the exit code, and the observation that decides the claim.
 Put the numbers in the answer, not a reference to them.
 
 ```
-实测：`node --test tests/` → 19 passed, 0 failed, exit 0.
+实测：`node --test` → 20 passed, 0 failed, exit 0.
 实测：`git status --porcelain` 空输出 → 工作区干净。
 ```
 
