@@ -1,0 +1,32 @@
+QH-Preset — third-party notices
+
+This package contains modified material from the projects below. Both are MIT
+licensed; their license texts are kept beside the snapshots in vendor/.
+
+---------------------------------------------------------------------------
+Superpowers 7.0.2
+Copyright (c) 2025 Jesse Vincent
+https://github.com/obra/superpowers
+
+License: MIT (vendor/superpowers/LICENSE-Superpowers.txt)
+
+Files used: skills/ (8 of 15 skills, as of this package).
+
+Modifications:
+  - Cross-skill references written as `superpowers:<name>` became `<name>`.
+  - skills/brainstorming/visual-companion.md and skills/brainstorming/scripts/
+    were removed; the Visual Companion section of that skill was replaced with
+    a note that this deployment provides none.
+  - skills/using-superpowers/references/dsh-tools.md was added, and one line
+    for DeepSeek Harness was added to its Platform Adaptation list.
+
+---------------------------------------------------------------------------
+ECC 2.2.3
+Copyright (c) 2026 Affaan Mustafa
+https://github.com/affaan-m/ECC
+
+License: MIT (vendor/ecc/LICENSE-ECC.txt)
+
+Files used: vendor/ecc/rules-common/ (10 files) and vendor/ecc/eval-harness/
+(SKILL.md), kept unmodified as reference material. Nothing from ECC is mounted
+in the preset yet.
