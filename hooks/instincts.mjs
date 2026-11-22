@@ -2,12 +2,17 @@
 //
 // This module is deliberately dependency-free and free of I/O: it decides what
 // the injected reminder says from two inputs — what this session's tools
-// actually returned, and what the project promoted into `.qh/instincts/`. The
-// plugin (`index.js`) owns the event subscription and the file reads; the tests
-// own this file.
+// actually did, and what the project promoted into `.qh/instincts/`. The plugin
+// (`index.js`) owns the event subscription and the file reads; the tests own
+// this file.
 //
-// The contract that matters: no captured fact and no promoted instinct means no
-// text at all. An empty contribution is how the channel stays quiet.
+// Two boundaries this module keeps:
+//   - No captured fact and no promoted instinct means no text at all. An empty
+//     contribution is how the channel stays quiet.
+//   - Captured facts select which instinct is relevant; they do not write rules.
+//     A judgement enters the prompt because someone promoted it, and repeating
+//     tool calls is already covered by the Harness's own repeat-tool-reminder
+//     guard, so this module does not duplicate it. See docs/HOOKS.md.
 
 /** Prompt-context name; also the `source.sections[].name` a session log records. */
 export const CONTEXT_NAME = 'quanheng:instincts'
@@ -24,98 +29,42 @@ export const MAX_CAPTURES = 200
 /** Lines an assembled reminder may carry before it starts costing more than it is worth. */
 export const MAX_RULES = 3
 
-/** Characters of a tool's failure message quoted back in a rule. */
-export const MAX_MESSAGE_CHARS = 200
-
 /** Characters of one promoted instinct body. */
 export const MAX_INSTINCT_CHARS = 400
 
-/** Nesting depth beyond which arguments are not keyed at all rather than keyed wrongly. */
-const MAX_ARGUMENT_DEPTH = 32
-
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
-function canonical(value, depth) {
-  if (depth > MAX_ARGUMENT_DEPTH) throw new Error('arguments nest too deeply to key')
-  if (Array.isArray(value)) return `[${value.map(item => canonical(item, depth + 1)).join(',')}]`
-  if (value === null) return 'null'
-  if (typeof value !== 'object') return JSON.stringify(value) ?? 'null'
-  const keys = Object.keys(value).sort()
-  const fields = keys.map(key => `${JSON.stringify(key)}:${canonical(value[key], depth + 1)}`)
-  return `{${fields.join(',')}}`
-}
-
 /**
- * A stable string for a parsed argument value: equal calls key equal.
- * @param value - the tool call's parsed arguments.
- * @returns the canonical form, or undefined when the value cannot be keyed.
+ * Whether one completed tool call failed.
+ *
+ * `isError` alone is not enough: a shell tool reports a non-zero command exit as
+ * an ordinary result whose content carries `[exit code: N]`, and only
+ * infrastructure failures become `isError` (`dsh-tool-pwsh/src/render.ts:5-8`).
+ * The command's own outcome is the tool's canonical value, so a numeric
+ * `exitCode` other than zero counts as a failure. Reading the text marker
+ * instead would tie this module to a display format.
+ * @param result - the result object handed to a `tools/result` listener.
+ * @returns true when the call itself failed, or a command it ran exited non-zero.
  */
-export function stableJson(value) {
-  try {
-    return canonical(value ?? null, 0)
-  } catch {
-    return undefined
-  }
-}
-
-/**
- * The identity of one tool call, used to notice an identical retry.
- * @param tool - registered tool name.
- * @param args - parsed arguments as the executor recorded them.
- * @returns `tool` and canonical arguments joined by a NUL, or undefined.
- */
-export function captureKey(tool, args) {
-  if (typeof tool !== 'string' || tool === '') return undefined
-  const canonicalArgs = stableJson(args)
-  return canonicalArgs === undefined ? undefined : `${tool}\u0000${canonicalArgs}`
-}
-
-/**
- * Trim one failure message to the single line a reminder can quote.
- * @param message - model-facing failure text, possibly multi-line.
- * @returns the collapsed first line, capped.
- */
-export function firstLine(message) {
-  const text = typeof message === 'string' ? message : ''
-  const collapsed = text.replace(/\s+/g, ' ').trim()
-  return collapsed.length <= MAX_MESSAGE_CHARS ? collapsed : `${collapsed.slice(0, MAX_MESSAGE_CHARS - 1)}…`
+export function callFailed(result) {
+  if (result?.isError === true) return true
+  const exitCode = result?.value?.exitCode
+  return typeof exitCode === 'number' && exitCode !== 0
 }
 
 /**
  * Append one completed call, keeping the newest {@link MAX_CAPTURES} entries.
+ *
+ * Only the tool name and the outcome are kept: the outcome gates the
+ * `tool-error` trigger, and the name gates `tool:<name>`. Quoting tool output
+ * back into the prompt is the Harness's job, not this module's.
  * @param captures - previous entries, oldest first.
- * @param record - the call to add.
+ * @param record - `{ tool, ok }` for the call that just finished.
  * @returns a new array; the input is not modified.
  */
 export function appendCapture(captures, record) {
   const next = [...captures, record]
   return next.length <= MAX_CAPTURES ? next : next.slice(next.length - MAX_CAPTURES)
-}
-
-/**
- * Failures that repeated with identical arguments.
- *
- * The value of this rule is that it is decidable: no model text is interpreted,
- * only "the same call failed again". Ordered by count, then key, so an unchanged
- * session renders an unchanged string and the runtime-context snapshot is not
- * rewritten for a reordering.
- * @param captures - completed calls from this session.
- * @returns one entry per repeated call, most repeated first.
- */
-export function repeatFailures(captures) {
-  const byKey = new Map()
-  for (const record of captures) {
-    if (record?.ok !== false || typeof record.key !== 'string') continue
-    const seen = byKey.get(record.key)
-    if (seen === undefined) byKey.set(record.key, { key: record.key, tool: record.tool, count: 1, message: record.message })
-    else {
-      seen.count += 1
-      seen.message = record.message
-    }
-  }
-  return [...byKey.values()]
-    .filter(entry => entry.count > 1)
-    .sort((a, b) => b.count - a.count || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0))
 }
 
 /** Whether a trigger string is one this build understands. */
@@ -175,23 +124,16 @@ function matches(trigger, usedTools, sawError) {
 /**
  * Assemble the reminder text for one assembly.
  *
- * Two sources, one list: rules derived from this session's captures, then the
- * project's promoted instincts that this session has made relevant. A rejected
- * instinct file contributes a diagnostic line instead of disappearing — the
- * owner must be able to see that a file they wrote is not in effect.
- * @param options - captures for the session and the loaded `.qh/instincts` files.
+ * A rejected instinct file contributes a diagnostic line instead of
+ * disappearing — the owner must be able to see that a file they wrote is not in
+ * effect. Instincts render in id order, so an unchanged session produces an
+ * unchanged string and the runtime-context snapshot is not rewritten.
+ * @param options - captures for this session and the loaded `.qh/instincts` files.
  * @returns the text to inject, the rule lines it carries, and any diagnostics.
  */
 export function renderInstincts({ captures = [], loaded = [] } = {}) {
   const rules = []
   const diagnostics = []
-
-  for (const failure of repeatFailures(captures)) {
-    const quoted = failure.message === undefined || failure.message === ''
-      ? ''
-      : `; latest error: ${failure.message}`
-    rules.push(`repeat-failure: ${failure.tool} failed ${failure.count} times with identical arguments${quoted}. Change the evidence source before the next attempt.`)
-  }
 
   const usedTools = new Set(captures.map(record => record?.tool).filter(tool => typeof tool === 'string'))
   const sawError = captures.some(record => record?.ok === false)
@@ -219,7 +161,7 @@ export function renderInstincts({ captures = [], loaded = [] } = {}) {
   const shown = rules.slice(0, MAX_RULES)
   const omitted = rules.length - shown.length
   const lines = [
-    'Quanheng instincts for this session, derived from captured tool results and .qh/instincts:',
+    'Quanheng instincts for this session, from .qh/instincts, selected by what this session has done so far:',
     ...shown.map(rule => `- ${rule}`),
     ...omitted > 0 ? [`- ${omitted} further rule(s) omitted; keep fewer instincts or narrow their triggers`] : [],
     ...diagnostics.map(diagnostic => `- ${diagnostic}`),

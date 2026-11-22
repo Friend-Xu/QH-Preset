@@ -52,7 +52,7 @@ Exactly three forms. Anything else is rejected and reported.
 | Token | Fires when |
 |---|---|
 | `always` | every request that renders the context |
-| `tool-error` | this session has seen at least one failed tool call |
+| `tool-error` | this session has had a failed tool call — a tool error, or a command that exited non-zero |
 | `tool:<name>` | this session has called the tool `<name>`, whether it succeeded or failed |
 
 Start with the narrowest trigger that still catches the case. `always` costs
@@ -77,8 +77,10 @@ whose source nobody can name.
 ## What the hook does with them
 
 - Rules whose trigger matches are added to the request context under the name
-  `quanheng:instincts`, next to the rules derived from this session's tool
-  results.
+  `quanheng:instincts`. The hook reads this session's captured tool outcomes to
+  decide *which* trigger is true; it never writes a rule from them. Repeating the
+  same tool call is caught by the Harness's own `repeat-tool-reminder` guard, and
+  this channel does not duplicate it.
 - A file that cannot be parsed appears as a diagnostic line in that same
   context — `instincts: <file> 未通过解析：<reason>` — and every other rule still
   applies. A rule you wrote that is not in effect must be visible, not silently

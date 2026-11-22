@@ -1,8 +1,11 @@
-// The quanheng instinct hook: capture what this session's tools actually
-// returned, and keep the resulting judgement rules present in every request.
+// The quanheng instinct hook: keep this project's promoted judgement rules in
+// front of the model, selected by what the session has actually done.
 //
 // Two halves, both native to the Harness:
-//   - `tools/result` is the emit-only observation of a completed call.
+//   - `tools/result` is the emit-only observation of a completed call. It is
+//     used here as a sensor: which tools ran, and whether any failed. It does
+//     not derive rules from those facts — repeating tool calls is already the
+//     job of the Harness's own repeat-tool-reminder guard.
 //   - `systemPrompt.context` is the supported standing-reminder channel. The
 //     agent loop materializes its text into a durable runtime-context message,
 //     and rewrites it only when the contributions changed.
@@ -12,9 +15,7 @@
 // bundle resolves no DSH package at runtime. See docs/HOOKS.md.
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import {
-  CONTEXT_NAME, appendCapture, captureKey, firstLine, parseInstinct, renderInstincts,
-} from './instincts.mjs'
+import { CONTEXT_NAME, appendCapture, callFailed, parseInstinct, renderInstincts } from './instincts.mjs'
 
 /** Cordis plugin name used by loader diagnostics. */
 export const name = 'quanheng-instincts'
@@ -71,14 +72,7 @@ export function apply(ctx) {
     if (session === undefined) return
     const id = session.header.id
     const state = sessions.get(id) ?? { captures: [] }
-    // A call whose arguments cannot be keyed still counts as activity, so tool
-    // triggers stay accurate, but it can never join a `repeat-failure` rule.
-    state.captures = appendCapture(state.captures, {
-      tool: exec.name,
-      key: captureKey(exec.name, exec.arguments),
-      ok: result.isError !== true,
-      message: result.isError === true ? firstLine(result.error?.message) : '',
-    })
+    state.captures = appendCapture(state.captures, { tool: exec.name, ok: !callFailed(result) })
     sessions.set(id, state)
   })
 

@@ -29,4 +29,4 @@ FAIL  no tool call failed — 4 failing call(s): seq 85, seq 159, seq 330, seq 3
 
 ## 已知残余风险
 
-`assert-session.mjs` 把"写入项目"定义为 `write`/`edit` 工具调用。通过 `pwsh` 落文件不会被这条断言捕获，所以第 4 项仍需人工确认——`docs/evals/preset-skill-triggering.md` 的 C2 同理。若要机械化，需要 `tools/pre-execute` 钩子（v0.3 的 `@quanheng/hooks`）。
+`assert-session.mjs` 把"写入项目"定义为 `write`/`edit` 工具调用。通过 `pwsh` 落文件不会被这条断言捕获，所以第 4 项仍需人工确认——`docs/evals/preset-skill-triggering.md` 的 C2 同理。要机械化就得看每次 `pwsh` 调用并解析它写了什么，或者用 `tools/pre-execute` 拦截落盘命令；v0.3 的 hook 两件都没做（它只捕获、不拦截，见 `docs/HOOKS.md`），所以这条仍是人工项，不是"已经有钩子兜着"。
