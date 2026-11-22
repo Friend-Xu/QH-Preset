@@ -21,9 +21,13 @@
 
 | 日期 | 结论 | 证据（转录摘要或路径） | 备注 |
 |---|---|---|---|
-| | 待跑 | | |
+| 2026-11-22 19:43 | **通过（有一处偏离）** | 会话 `session-3ac11643`，`cwd = 测试项目\新preset预设测试`，`agentPreset: quanheng`。事件 seq 25/28/31 连续调用 `skill: using-superpowers → brainstorming → personalized-pages`；用户说"自己随手记每天开销"后先给方案，用户澄清"想要单独的小工具"；首次 `write` 在 seq 68 | 偏离：seq 68/71 写了两个一次性探测文件 `_recon-ls.html`、`_recon-ls2.html`（测 file:// 下 localStorage 是否跨文件共享），seq 104 删除。属于"未获批准就先动手"，但只读探测不涉及产品代码 |
 
-判定：若没有在写代码前调用 `brainstorming`，v0.1 不合格；先查 `skills/` 是否被挂载（M3），再考虑 v0.2 用插件把入口规则变成常驻提示段。
+判定：**通过**——技能在写任何产品代码之前触发，brainstorming 的"先问意图、再给方案"生效；用户选 `a` 后才进入 `writing-plans`。
+
+偏离处理（v0.2）：`brainstorming` 的 HARD-GATE 只允许"用户已同意的 spike"。一次性探测应当先说明再做，或改成纯读探测（用 `pwsh` 起临时静态服务器测，不在项目里落文件）。两种改法二选一，写进 v0.2 的改动清单。
+
+另一份旁证：会话 `session-b7c5802c`（`cwd = D:\WorkSpace\思考类工作目录`，同一 preset）是纯研究任务——加载 `using-superpowers → official-plugins → brainstorming → dsh-doc`，用 `ask_user_question` 问了一个澄清问题，全程零写操作。说明该 preset 在"非构建任务"上也不会误触发构建门。
 
 ## M1 / M2 / M5 记录
 
