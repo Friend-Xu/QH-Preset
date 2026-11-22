@@ -1,3 +1,3 @@
-# Shell helpers must stay LF: they run under bash, which fails on CRLF.
-skills/**/scripts/* text eol=lf
+# Helpers are Node modules run by node; LF keeps diffs and editors stable.
+skills/**/scripts/*.mjs text eol=lf
 * text=auto

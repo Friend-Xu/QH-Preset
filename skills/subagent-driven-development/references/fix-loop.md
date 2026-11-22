@@ -1,4 +1,4 @@
-﻿# The Fix Loop
+# The Fix Loop
 
 Part of subagent-driven-development. The task review reported
 spec ❌, a Critical or Important finding, or a ⚠️ item you confirmed as a real
@@ -41,7 +41,7 @@ output; dispatch the re-review once all three are present. Name the
 covering test files in the fix message — a one-line fix does not need the
 whole suite.
 
-**The re-review is scoped.** Run `bash scripts/review-package PLAN_FILE FIX_BASE HEAD`
+**The re-review is scoped.** Run `node scripts/review-package.mjs PLAN_FILE FIX_BASE HEAD`
 by its absolute path, from the working tree you're executing in, where FIX_BASE is the head the previous review saw, and dispatch
 [re-review-prompt.md](../re-review-prompt.md) with the findings list, the
 brief, the report file, and the printed diff path. The re-reviewer verdicts
