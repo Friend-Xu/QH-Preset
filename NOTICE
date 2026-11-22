@@ -10,15 +10,22 @@ https://github.com/obra/superpowers
 
 License: MIT (vendor/superpowers/LICENSE-Superpowers.txt)
 
-Files used: skills/ (8 of 15 skills, as of this package).
+Files used: skills/ (11 of 15 skills, as of this package).
 
 Modifications:
   - Cross-skill references written as `superpowers:<name>` became `<name>`.
   - skills/brainstorming/visual-companion.md and skills/brainstorming/scripts/
     were removed; the Visual Companion section of that skill was replaced with
     a note that this deployment provides none.
+  - skills/brainstorming/SKILL.md's HARD-GATE now says exploring writes nothing
+    into the project, and a probe that writes a file must be announced first and
+    kept under .superpowers/scratch/. One Red Flags row was added for it. The
+    evidence is a logged session: docs/evals/preset-gate-announcement.md.
   - skills/using-superpowers/references/dsh-tools.md was added, and one line
     for DeepSeek Harness was added to its Platform Adaptation list.
+  - executing-plans/scripts/ and subagent-driven-development/scripts/ were
+    ported from bash to Node modules with the same arguments, exit codes and
+    output; the bash originals are kept in vendor/.
 
 ---------------------------------------------------------------------------
 ECC 2.2.3
@@ -28,5 +35,13 @@ https://github.com/affaan-m/ECC
 License: MIT (vendor/ecc/LICENSE-ECC.txt)
 
 Files used: vendor/ecc/rules-common/ (10 files) and vendor/ecc/eval-harness/
-(SKILL.md), kept unmodified as reference material. Nothing from ECC is mounted
-in the preset yet.
+(SKILL.md), kept unmodified as reference material.
+
+Derived, not copied (rewritten for this harness and this agent's tool set, with
+the differences recorded in docs/UPSTREAM.md):
+  - skills/qh-judgment/ — the delegation completion contract from
+    rules/common/agents.md, and the review severity/approval rules from
+    rules/common/code-review.md. The evidence-labelling convention is ours.
+  - skills/eval-harness/ — the eval-driven development framework, grader kinds,
+    pass@k / pass^k definitions and anti-patterns from eval-harness/SKILL.md.
+    ECC's capsule/gate tooling was not carried over.
