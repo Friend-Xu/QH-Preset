@@ -8,7 +8,13 @@
 //
 // Usage:
 //   node scripts/assert-session.mjs SESSION_LOG [--preset ID]
-//        [--skill-order a,b,c] [--no-write-before SKILL] [--no-tool-errors] [--json]
+//        [--skill-order a,b,c] [--no-write-before SKILL] [--no-tool-errors]
+//        [--context NAME[=SUBSTRING]] [--context-after SEQ] [--json]
+//
+// `--context` asserts that a runtime-context contribution with that name reached
+// the model at least once, optionally carrying a substring. `--context-after`
+// bounds the first such appearance to SEQ or later, which is how "the rule was
+// silent until the evidence arrived" becomes a check instead of a claim.
 //
 // Exit: 0 all assertions held, 1 an assertion failed, 2 the log could not be read.
 import { existsSync, readFileSync, statSync } from 'node:fs'
@@ -89,8 +95,29 @@ function firstSequenceOf(events, predicate) {
   return found === undefined ? undefined : found.seq
 }
 
+/**
+ * Every runtime-context contribution that reached the model, with the seq of the
+ * message that carried it. The agent loop materializes prompt contexts into
+ * durable `user/message` events whose source keeps the named sections.
+ */
+export function contextSections(events) {
+  const found = []
+  for (const event of events) {
+    if (event.type !== 'user/message') continue
+    const source = event.data?.source
+    if (source?.kind !== 'runtime-context') continue
+    for (const section of source.sections ?? []) {
+      found.push({ seq: event.seq, name: section.name, text: typeof section.text === 'string' ? section.text : '' })
+    }
+  }
+  return found
+}
+
 function parseArgs(argv) {
-  const options = { file: undefined, preset: undefined, skillOrder: undefined, noWriteBefore: undefined, noToolErrors: false, json: false }
+  const options = {
+    file: undefined, preset: undefined, skillOrder: undefined, noWriteBefore: undefined,
+    noToolErrors: false, context: undefined, contextAfter: undefined, json: false,
+  }
   const rest = []
   for (let index = 0; index < argv.length; index++) {
     const argument = argv[index]
@@ -99,11 +126,25 @@ function parseArgs(argv) {
     else if (argument === '--preset') options.preset = argv[++index]
     else if (argument === '--skill-order') options.skillOrder = argv[++index]
     else if (argument === '--no-write-before') options.noWriteBefore = argv[++index]
-    else if (argument.startsWith('--')) throw new Error(`unknown option: ${argument}`)
+    else if (argument === '--context') {
+      const value = argv[++index]
+      if (typeof value !== 'string' || value === '') throw new Error('--context needs NAME or NAME=SUBSTRING')
+      const separator = value.indexOf('=')
+      options.context = separator === -1
+        ? { name: value, substring: undefined }
+        : { name: value.slice(0, separator), substring: value.slice(separator + 1) }
+    } else if (argument === '--context-after') {
+      const value = Number(argv[++index])
+      if (!Number.isSafeInteger(value) || value < 0) throw new Error('--context-after needs a non-negative seq')
+      options.contextAfter = value
+    } else if (argument.startsWith('--')) throw new Error(`unknown option: ${argument}`)
     else rest.push(argument)
   }
   if (rest.length !== 1) {
-    throw new Error('usage: assert-session SESSION_LOG [--preset ID] [--skill-order a,b,c] [--no-write-before SKILL] [--no-tool-errors] [--json]')
+    throw new Error('usage: assert-session SESSION_LOG [--preset ID] [--skill-order a,b,c] [--no-write-before SKILL] [--no-tool-errors] [--context NAME[=SUBSTRING]] [--context-after SEQ] [--json]')
+  }
+  if (options.contextAfter !== undefined && options.context === undefined) {
+    throw new Error('--context-after needs a --context NAME to bound')
   }
   options.file = rest[0]
   return options
@@ -166,6 +207,35 @@ export function checkSession(events, options) {
       ok: errors.length === 0,
       detail: errors.length === 0 ? '0 errors' : `${errors.length} failing call(s): ${errors.map(event => `seq ${event.seq}`).join(', ')}`,
     })
+  }
+
+  if (options.context !== undefined) {
+    const sections = contextSections(events)
+    const matching = sections.filter(section => section.name === options.context.name
+      && (options.context.substring === undefined || section.text.includes(options.context.substring)))
+    const label = options.context.substring === undefined
+      ? `${options.context.name}`
+      : `${options.context.name} containing ${JSON.stringify(options.context.substring)}`
+    if (options.contextAfter !== undefined) {
+      const early = matching.filter(section => section.seq < options.contextAfter)
+      results.push({
+        name: `no ${label} before seq ${options.contextAfter}`,
+        ok: early.length === 0 && matching.length > 0,
+        detail: matching.length === 0
+          ? `never appeared; ${sections.length} runtime-context contribution(s) in total`
+          : early.length === 0
+            ? `first at seq ${matching[0].seq}`
+            : `${early.length} earlier at seq ${early.map(section => section.seq).join(', ')}`,
+      })
+    } else {
+      results.push({
+        name: `runtime context ${label} reached the model`,
+        ok: matching.length > 0,
+        detail: matching.length === 0
+          ? `not found; ${sections.length} runtime-context contribution(s): ${[...new Set(sections.map(section => section.name))].join(', ') || '(none)'}`
+          : `${matching.length} time(s), first at seq ${matching[0].seq}`,
+      })
+    }
   }
 
   return {

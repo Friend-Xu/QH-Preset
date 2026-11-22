@@ -14,14 +14,18 @@ const EXPECTED_SKILLS = [
   'brainstorming',
   'eval-harness',
   'executing-plans',
+  'finishing-a-development-branch',
   'qh-judgment',
   'receiving-code-review',
   'requesting-code-review',
   'subagent-driven-development',
+  'systematic-debugging',
   'test-driven-development',
+  'using-git-worktrees',
   'using-superpowers',
   'verification-before-completion',
   'writing-plans',
+  'writing-skills',
 ]
 
 // Skills distilled from ECC rather than ported from Superpowers. They must say
@@ -82,6 +86,19 @@ function skillDirs() {
   return readdirSync(base, { withFileTypes: true })
     .filter(entry => entry.isDirectory())
     .map(entry => entry.name)
+}
+
+/**
+ * Every JavaScript file this bundle ships and runs: the skills' helpers, the
+ * hook plugin, and the package-level scripts. They share one process and one
+ * sandbox, so they share one set of rules.
+ */
+function helperFiles() {
+  return [
+    ...entries(join(root, 'skills')),
+    ...existsSync(join(root, 'hooks')) ? entries(join(root, 'hooks')) : [],
+    ...entries(join(root, 'scripts')),
+  ].filter(file => ['.mjs', '.js'].includes(extname(file)))
 }
 
 /** Body text without the YAML frontmatter. */
@@ -210,8 +227,10 @@ check('no upstream namespace, visual companion or home-directory path remains', 
 check('shipped helpers never capture a child through a pipe', () => {
   // Under the Windows ACL sandbox a piped stdio child cannot open its named pipe
   // and fails with EPERM, so a helper that captures that way breaks exactly where
-  // it is supposed to run (DSH docs/subsystems sandbox-windows-acl).
-  const files = entries(join(root, 'skills')).filter(file => extname(file) === '.mjs')
+  // it is supposed to run (DSH docs/subsystems sandbox-windows-acl). The auditor
+  // is excluded: it names the pattern it forbids.
+  const self = join(root, 'scripts', 'check-preset.mjs')
+  const files = helperFiles().filter(file => file !== self)
   for (const file of files) {
     const text = readFileSync(file, 'utf8')
     assert(!/stdio:\s*['"]pipe['"]/.test(text), `${file} uses piped stdio`)
@@ -221,7 +240,7 @@ check('shipped helpers never capture a child through a pipe', () => {
 })
 
 check('every relative import in a helper resolves', () => {
-  const files = entries(join(root, 'skills')).filter(file => extname(file) === '.mjs')
+  const files = helperFiles()
   let count = 0
   for (const file of files) {
     const text = readFileSync(file, 'utf8')
@@ -290,6 +309,55 @@ check('no skill file costs more context than it is worth', () => {
   }
   return `${files.length} files, ${Math.round(total / 1024)} KB total`
 })
+
+check('the hooks plugin registers the capture and the injection it documents', () => {
+  const file = join(root, 'hooks', 'index.js')
+  assert(existsSync(file), 'hooks/index.js is missing')
+  const text = readFileSync(file, 'utf8')
+  assert(/export const name = '[\w-]+'/.test(text), 'hooks/index.js exports no plugin name')
+  assert(/export const inject = \['systemPrompt'\]/.test(text), 'the hook does not inject systemPrompt')
+  assert(/export function apply\(ctx\)/.test(text), 'hooks/index.js exports no apply(ctx)')
+  assert(text.includes("'tools/result'"), 'the hook does not observe tools/result')
+  assert(/ctx\.systemPrompt\.context\(/.test(text), 'the hook registers no prompt context')
+  assert(/required: true/.test(text), 'the context is optional, so a suppressing deployment drops it silently')
+  assert(/interpolate: false/.test(text), 'the context is interpolated, so captured `{{` would throw')
+  for (const helper of ['index.js', 'instincts.mjs']) {
+    const size = statSync(join(root, 'hooks', helper)).size
+    assert(size <= 32 * 1024, `hooks/${helper} is ${Math.round(size / 1024)} KB, over the 32 KB ceiling`)
+  }
+})
+
+check('the preset mounts the hooks row by package subpath', () => {
+  const row = rows().find(candidate => candidate.id === 'hooks')
+  assert(row !== undefined, 'cordis.patch.yml has no hooks row')
+  assert(row.body.some(line => /^\s*name:\s*'@quanheng\/preset\/hooks'\s*$/.test(line)),
+    "the hooks row does not name '@quanheng/preset/hooks'")
+})
+
+check('package exports the plugin subpath and its own manifest', () => {
+  const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
+  assert(pkg.exports?.['./hooks'] === './hooks/index.js', 'package.json does not export ./hooks')
+  // The patch resolves the package manifest through this export to find skills/.
+  assert(pkg.exports?.['./package.json'] === './package.json',
+    'package.json must keep exporting ./package.json, or the skill root stops resolving')
+  assert(existsSync(join(root, 'hooks', 'index.js')), 'the exported ./hooks file does not exist')
+})
+
+check('the instinct triggers are the same in the hook and in its contract', () => {
+  const code = readFileSync(join(root, 'hooks', 'instincts.mjs'), 'utf8')
+  const contract = readFileSync(join(root, 'skills', 'qh-judgment', 'references', 'instincts.md'), 'utf8')
+  for (const [token, pattern] of [
+    ['always', /FIXED_TRIGGERS = Object\.freeze\(\['always'/],
+    ['tool-error', /'tool-error'/],
+    ['tool:<name>', /TOOL_TRIGGER_PREFIX = 'tool:'/],
+  ]) {
+    assert(pattern.test(code), `hooks/instincts.mjs no longer defines the ${token} trigger`)
+  }
+  for (const token of ['`always`', '`tool-error`', '`tool:<name>`']) {
+    assert(contract.includes(token), `the instincts contract does not document ${token}`)
+  }
+})
+
 
 for (const line of passes) console.log(`PASS  ${line}`)
 for (const line of failures) console.log(`FAIL  ${line}`)

@@ -110,15 +110,19 @@ export function resolveExecutable(command) {
 
   if (hasSeparator || isAbsolute(command)) {
     const candidates = isWindows && !extensions.some(ext => command.toLowerCase().endsWith(ext.toLowerCase()))
-      ? [command, ...extensions.map(ext => command + ext)]
+      ? [...extensions.map(ext => command + ext), command]
       : [command]
     return candidates.find(candidate => isFile(candidate))
   }
 
   const pathValue = process.env.PATH ?? ''
+  // On Windows a bare name usually matches an extensionless sh shim as well
+  // (`npm`, `npx`), which CreateProcess cannot execute. Probe the executable
+  // extensions first so the resolved path is one that can actually be spawned.
+  const ordered = isWindows ? [...extensions, ''] : ['']
   for (const directory of pathValue.split(delimiter)) {
     if (directory === '') continue
-    for (const extension of ['', ...extensions]) {
+    for (const extension of ordered) {
       const candidate = join(directory, command + extension)
       if (isFile(candidate)) return candidate
     }

@@ -71,6 +71,9 @@ check it.
   table in full, and what to do with a suspicion you could not reproduce.
 - [delegation.md](references/delegation.md) — the completion contract, and the
   prompt a child actually needs in this Harness.
+- [instincts.md](references/instincts.md) — how a judgement that survived its
+  evidence is stored in `.qh/instincts/` so the hook keeps it in front of you
+  without a skill load, and what disqualifies a rule.
 
 ## Red flags
 
