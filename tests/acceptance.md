@@ -73,6 +73,8 @@ FAIL  no tool call failed — 1 failing call(s): seq 77
 ```
 
 - **门禁通过**：整个探索阶段 0 次 `write`/`edit`（v0.1 是 seq 68/71 两个探测页），只做只读探查（`Get-ChildItem`/`Get-Content`/`Get-Command`），最后用 `ask_user_question` 问一个开放问题，没有擅自开工。
+- **新规则真的被用上了**：负责人回答"就用它，先带我过一遍"之后，agent 唯一一次落文件是 seq 174 的 `.superpowers\scratch\demo\.keep`——正是新版 HARD-GATE 指定的位置（v0.1 那次是项目根目录的 `_recon-ls.html`）。它也在 seq 179 说明了自己在演示前建的临时目录。
+- **环境限制（不是 preset 缺陷，但要知道）**：这个测试工作区有陈旧的沙箱 ACL——`pwsh` 里在子目录下建文件被拒（seq 136 → 143），根目录可以（seq 158/165）。agent 因此加载了 DSH 自带的 `diagnose-windows-sandbox-acl` 排查（seq 144），最后改用 `write` 工具（不受沙箱令牌限制）建那个 `.keep`。同理，helper 在别的健康工作区跑没问题；如果哪个工作区写不进去，helper 会以非零退出码直接报错，不会静默。
 - **preset 判定要读事件而不是 header**：这个会话是 GUI 先建了草稿（header 写 `ptc`），随后在同一 composer 里改选「权衡」，首条消息前落了一条 `agent-preset/selected: quanheng`。`assert-session.mjs` 因此改为"最后一个 `agent-preset/selected` 优先，header 兜底"——不改的话，真实的 quanheng 会话会被判成 ptc。
 - **那 1 个失败调用是环境限制，不是 preset 缺陷**：seq 77 用浏览器工具打开 `file:///…/随手记账.html` 被拒（`Access to "file:" protocol is blocked`）。它随后改用 `python -m http.server 8765`（seq 90）看完并在同一轮 `job_kill`（seq 123/124）。据此改了一条部署说明：`dsh-tools.md` 现在写明 `file:` 被拒，需要自己看就起短命本地服务器并在同一轮停掉。
 
