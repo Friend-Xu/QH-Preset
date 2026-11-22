@@ -29,6 +29,7 @@
 
 | 判据 | 命令 | 结果 |
 |---|---|---|
-| M1 已激活 | `plugin_manager list_plugins` 找 `preset-quanheng` | 待跑 |
-| M2 出现在配置里 | `dsh --profile web --dump-config` | 待跑 |
+| M1 已激活 | `plugin_manager list_plugins`（offset 190） | **通过** 2026-11-22：`include:preset-quanheng` `enabled: true`、`fiberPhase: active`、`patchId: preset-quanheng` |
+| M2 出现在配置里 | `dsh --profile web --dump-config` | **通过** 2026-11-22：输出含 `# == @quanheng/preset` 与 `id: quanheng`，五字段完整 |
+| M2b 技能根解析 | 用 profile 的 `createRequire` 解析 `@quanheng/preset/package.json` | **通过** 2026-11-22：解析到 `D:\WorkSpace\PRD-OS\QH-Preset\package.json`，`skills/` 存在，8 个目录 |
 | M5 回滚 | 卸载后 `quanheng` 从预设列表消失，四个出厂预设仍在 | 待跑 |
