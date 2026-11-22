@@ -14,13 +14,21 @@
 
 ## 装与卸
 
-**从 GitHub 装（推荐）**——装成 profile 里的副本，与本机任何目录无关：
+**从 GitHub 装（推荐）**——装成 profile 里的副本，与本机任何目录无关，版本由 git tag 决定：
 
 ```text
-plugin_manager action=install_bundle target=github:Friend-Xu/QH-Preset#<commit>
+# 会话里，由 agent 调工具
+plugin_manager action=install_bundle target=github:Friend-Xu/QH-Preset#v0.3.1
+
+# 命令行（cmd / PowerShell），先停掉 DSH
+dsh plugin --profile web add github:Friend-Xu/QH-Preset#v0.3.1
 ```
 
-图形界面等价：设置 → 插件 → 添加插件 → **安装第三方插件** → 「包名或地址」粘同一串。`<commit>` 填某个提交的完整 sha（钉住版本）或分支名 `master`（跟最新）。
+图形界面等价：设置 → 插件 → 添加插件 → **安装第三方插件** → 「包名或地址」粘 `github:Friend-Xu/QH-Preset#v0.3.1`。
+
+`#` 后面是 **git tag**，tag 名 = `v` + `package.json` 的 `version`（现在两者都是 `0.3.1`）。已发布的版本看仓库的 Tags 页；换成 `master` 跟的是未发布的最新提交，内容会漂，不推荐。
+
+`dsh plugin --profile <name> <pnpm 参数>` 是 DSH 自带的插件命令：参数原样转给 profile 目录里的 pnpm，同时把 `package.json` 的依赖和 `dsh.profile.bundles` 两处一起对齐（和 GUI 的安装/卸载同一份实现）。别手改这两个地方，也别在 profile 里裸跑 pnpm。
 
 **从本地目录装（改自己这份仓库时用）**——装成链接，仓库改动直接生效，不必重装：
 
@@ -32,11 +40,22 @@ plugin_manager action=install_bundle target=<本仓库目录的绝对路径>
 
 ```text
 plugin_manager action=remove_bundle target=@quanheng/preset
+
+# 或（先停 DSH）
+dsh plugin --profile web remove @quanheng/preset
 ```
 
 安装会改写 profile 的依赖与组合清单（`$DSH_HOME/profiles/<profile>/`，默认 `web`）；卸载即回滚。装完**新会话**才生效。改了 `hooks/` 的源码需要重启 DSH：preset 里的插件不受 HMR 管理，重组合会返回 `application: restart-required`；只改 `.qh/instincts/*.md` 不用重启。
 
-**更新**：GitHub 装的先卸载、再用新的 `<commit>` 装；本地目录装的改完仓库、重启 DSH 即可。
+**更新**：GitHub 装的先卸载、再用新的 tag 装；本地目录装的改完仓库、重启 DSH 即可。
+
+## 发布一个版本
+
+1. 改 `package.json` 的 `version`（这是唯一版本源）。
+2. 提交后打 tag 并推：`git tag -a v<version> -m "..." && git push origin v<version>`。
+3. 安装串里的 `#v<version>` 就是它。
+
+**已发布的 tag 不要移动**：同一个 tag 在不同时间装出不同的东西，"按版本安装"就不成立了。要改就发新版本、新 tag。
 
 ## 三条必须知道的约束
 
