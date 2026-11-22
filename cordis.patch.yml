@@ -23,6 +23,10 @@
                 If you dispatch a subagent, you own collection: wait for it, integrate the result, and never end a turn with work still running. Decompose only when the work cannot fit in one context.
 
                 No fallbacks: absence is an error, and a failure surfaces where it happens.
+          # Captured tool outcomes plus .qh/instincts, kept in the request context
+          # without a skill load. Resolves inside this package; see docs/HOOKS.md.
+          - id: hooks
+            name: '@quanheng/preset/hooks'
           - id: agent-instructions
             name: '@deepseek-ai/dsh-agent-instructions'
             config:
