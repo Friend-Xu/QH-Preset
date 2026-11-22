@@ -116,14 +116,17 @@ PASS  no tool call failed — 0 errors
 | 4 个新技能可被发现 | 通过 | 会话 `082ed5f1` seq 38 `skill systematic-debugging` 加载成功；`check-preset` 的 `EXPECTED_SKILLS` 已是 15 |
 | 结构自检 | 通过 | `node scripts/check-preset.mjs` → 20 passed, 0 failed |
 | 行为测试 | 通过 | `node --test` → 44 passed, 0 failed（helper / instinct / find-polluter / session-assert） |
+| 命令非零退出也触发 `tool-error` | 通过（重启 DSH 后复验） | 会话 `2335cb1d` seq 22 跑 `node -e "process.exit(7)"`，seq 25 的结果是 `isError=false` + `[exit code: 1]`（正是旧代码漏掉的那种），seq 28 的 context 才出现 `read-the-error`；`assert-session --context "quanheng:instincts=read-the-error" --context-after 26` PASS。反证：边界挪到 29 必须 FAIL |
 
-**尚未验过的一条**：命令非零退出算失败这条路径（`callFailed` 读 canonical value 的 `exitCode`）只有单元测试，没有真会话证据。改完源码后 `set_plugin include:preset-quanheng` 返回 `application: restart-required`（`restartReason: unmanaged-plugin`）：preset 里的插件不受 HMR 管理，运行中的 Host 仍持有旧模块。重启 DSH 后跑一次"执行一条退出码非 0 的命令 → 看 `read-the-error` 是否出现"，即可把这条移入通过区。
+### 重启这条是怎么过的
+
+改完 `hooks/` 源码后，`plugin_manager set_plugin include:preset-quanheng` 一直返回 `application: restart-required`（`restartReason: unmanaged-plugin`）：preset 里的插件不受 HMR 管理，运行中的 Host 持有旧模块。负责人重启 DSH 后，同一探针在 `2335cb1d` 上验成。**这条约束留在 `docs/HOOKS.md` 与 README 里**：改插件源码要重启，改 `.qh/instincts/*.md` 不用。
 
 ### 本轮偏离与修正
 
 1. **注入通道从 `agent/pre-step` 改为 `systemPrompt.context`**（计划已写明此偏离并获批）。理由：前者要 `createUserMessage`（`@deepseek-ai/dsh-llm`，预发布版本）→ 给一个 link 安装的包新增预发布 peer 依赖；后者是 Harness 自己的常驻提醒通道（`experimental/timeline` 同构），零外部导入，且注入同样落成持久 `user/message`（`agent-loop/src/runtime-context.ts:76-92`）。
 2. **内置的 `repeat-failure` 规则被删除**（计划里唯一的内置规则）。做实前查了一眼运行时的插件清单：`@deepseek-ai/dsh-repeat-tool-reminder` 已在 Host 上激活，按"工具+参数"连续重复计数（阈值 3/5/8）并注入提醒。再写一条同类规则就是第二条路径，违反 `$DSH_HOME/AGENTS.md` §5 与"先查已有方案"。于是 hook 的捕获只用来筛选已提升的 instinct（`tool-error` / `tool:<name>`），不再自己生成规则；`docs/HOOKS.md` 与 `qh-judgment/references/instincts.md` 都写明这条边界。
-3. **`isError` 不是"命令失败"**：实测 `pwsh` 跑 `node -e "process.exit(7)"`，`tools/result` 的 `isError` 仍是 `false`，失败在 `[exit code: N]` 标记里；源码 `shell/tool-pwsh/src/render.ts:5-8` 确认"非零退出只报告、不置 error"。改为读 canonical value 的结构化 `exitCode`（`tool-pwsh/src/index.ts` 的 `output.schema` 有该字段），并补了单元测试。
+3. **`isError` 不是"命令失败"**：实测 `pwsh` 跑 `node -e "process.exit(7)"`，`tools/result` 的 `isError` 仍是 `false`，失败在 `[exit code: N]` 标记里；源码 `shell/tool-pwsh/src/render.ts:5-8` 确认"非零退出只报告、不置 error"。改为读 canonical value 的结构化 `exitCode`（`tool-pwsh/src/index.ts` 的 `output.schema` 有该字段），并补了单元测试；重启后用会话 `2335cb1d`（seq 25 → seq 28）复验通过。
 4. **`resolveExecutable` 的 Windows 缺陷**（移植 `find-polluter` 时撞出来的）：`npm` 先匹配到 nodejs 目录下无扩展名的 sh shim，`CreateProcess` 跑不了，`ENOENT` 又被 `spawnWithStdio` 吞掉，表现是"命令什么都没发生"。改为先试可执行扩展名；`find-polluter` 同时把"spawn 失败"当失败报出来（不再只看退出码）。
 5. **计划里"`docs/UPSTREAM.md` 写的是 4 个未装技能"**：实测是 6 个（15 个目录、已装 9 个）。本次开 4 个，剩 2 个按既有理由不开；文件已改正。
 
