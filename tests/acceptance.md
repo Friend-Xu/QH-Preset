@@ -78,15 +78,32 @@ FAIL  no tool call failed — 1 failing call(s): seq 77
 - **preset 判定要读事件而不是 header**：这个会话是 GUI 先建了草稿（header 写 `ptc`），随后在同一 composer 里改选「权衡」，首条消息前落了一条 `agent-preset/selected: quanheng`。`assert-session.mjs` 因此改为"最后一个 `agent-preset/selected` 优先，header 兜底"——不改的话，真实的 quanheng 会话会被判成 ptc。
 - **那 1 个失败调用是环境限制，不是 preset 缺陷**：seq 77 用浏览器工具打开 `file:///…/随手记账.html` 被拒（`Access to "file:" protocol is blocked`）。它随后改用 `python -m http.server 8765`（seq 90）看完并在同一轮 `job_kill`（seq 123/124）。据此改了一条部署说明：`dsh-tools.md` 现在写明 `file:` 被拒，需要自己看就起短命本地服务器并在同一轮停掉。
 
-## M3：新技能可发现 + TDD 触发（待跑）
+## M3：新技能可发现 + TDD 触发（已跑，通过）
 
-在一个 `quanheng` 新会话里发：`帮我写个函数把字符串反转，用 TDD 跑一次测试`。期望加载 `using-superpowers` → `test-driven-development`，先写失败测试再写实现。拿到会话 id 后跑：
+会话 `session-9c6fb552-ace8-4552-bee5-7bbccace2bdf`，探针 `帮我写个函数把字符串反转，用 TDD 跑一次测试`。
 
 ```
-node scripts/assert-session.mjs <log> --preset quanheng --skill-order using-superpowers,test-driven-development
+$ node scripts/assert-session.mjs <log> --preset quanheng \
+    --skill-order using-superpowers,test-driven-development --no-tool-errors
+preset:  quanheng
+chain:   22:using-superpowers → 28:test-driven-development
+PASS  agent preset is quanheng — found "quanheng"
+PASS  skills load in order: using-superpowers → test-driven-development
+PASS  no tool call failed — 0 errors
 ```
 
-技能本体可发现性已由 M2b 证明（技能根下有 11 个目录，`test-driven-development` 在列）；M3 补的是"会不会在实现前真的被加载"。
+**RED-GREEN 也真的发生了**（这是 TDD 技能自己的主张，值得单独记）：
+
+| seq | 动作 | 结果 |
+|---|---|---|
+| 119 | 先写测试 `string-reverse/tests/test_reverse_string.py` | — |
+| 125 / 139 | 在没有任何实现时跑 `py -3.15 -m unittest discover` | 两次都是 `_FailedTest ... ERROR`（RED） |
+| 147 | 才写实现 `string-reverse/reverse_string.py` | — |
+| 153 | 再跑同一个命令 | `test_returns_single_character_unchanged ... ok`（GREEN） |
+
+顺序是"测试 → 看它失败 → 再实现"，不是"先写代码再补测试"。它自己选了 Python + unittest（本机有 `py 3.15`），没有引入任何外部依赖。
+
+会话产出的 `测试项目\新preset预设测试\string-reverse\` 是探针产物，验收后已删除（连同 `__pycache__`）；证据留在会话日志与上表。
 
 ## v0.1 基线（保留）
 
