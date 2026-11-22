@@ -134,6 +134,45 @@ PASS  no tool call failed — 0 errors
 
 探针会话 `082ed5f1` 在调查它自己那条失败命令时，量到 DSH 的 `pwsh` 工具在本机解析到 **Windows PowerShell 5.1**（`$PSVersionTable` = `5.1.26100.9444 Desktop`），因为 `pwsh.exe` 不存在（`shell/pwsh-local/src/resolve.ts` 的回退分支）。后果：`-Command` 里以原生失败命令结尾时，标记给的是 `[exit code: 1]` 而不是子进程真实的 7（seq 25 vs seq 33）。这是 DSH 侧的行为，不在本仓库范围内，但会影响任何依赖退出码的脚本，记在这里备查。
 
+## v0.3.1 — 与 ECC / Superpowers 的核对
+
+起点是一次人工比对：87 个 Superpowers 文件 + 12 个 ECC 文件，逐个对到 `docs/UPSTREAM.md` 的行。结论是**改造本身是对的，账不全**——文件账在 Superpowers 侧 100% 闭合（37 个只在上游的文件、16 个只在包内的文件，逐个指得到一行），ECC 侧漏了 1 个文件的处置；另有 1 个真缺陷（BOM）和 1 个会误导判断的文档错误。
+
+| # | 发现 | 处理 | 判据 |
+|---|---|---|---|
+| 1 | 8 个文件带 `EF BB BF`（v0.1 批量改名带入），含 `writing-plans/SKILL.md` | 去掉 BOM；检查改为**拒绝**而不是解析前抹掉 | 8 个文件 `git diff --numstat` 各 `1 1`；全包扫描 0 个 BOM |
+| 2 | `dsh-tools.md:63` 说"非零退出＝这件事没发生"，与 `find-polluter` 的退出 1（找到污染源）相反 | 改写为"退出 0 表示发生；`find-polluter` 的 1 也是成功" | `find-polluter.mjs:14` 的退出码表 |
+| 3 | `UPSTREAM.md` #1 写"已装的 11 个技能"，v0.1 实为 8 个 | 改成 v0.1 的 8 个 | `git ls-tree 927a9d1:skills` = 8；`README.md` 也写 8 |
+| 4 | ECC `development-workflow.md` 整包 0 次提及 | 补 E7 行 | `audit-upstream` 对它给出 `omitted` + E7 |
+| 5 | 4 处内容改动没进表 | 补 #14–#17 | 每行带引入它的提交：`cf0c28f`（#14–#16）、`11d285c`（#17） |
+| 6 | `brainstorming:313` 的"写 HTML 到项目里"与门禁的 scratch 规则互相拉扯 | 让渲染页服从门禁那条 | 两处现在指向同一条规则 |
+| 7 | 升级流程第 2 步的 `diff -r` 在本机空转 | 换成 `node scripts/audit-upstream.mjs` | 实测 `(Get-Command diff).CommandType = Alias`（`Compare-Object`）；`diff -r` 不报错，只打印两行目录名 |
+
+### 负样本（检查必须能在缺陷存在时失败）
+
+1. **BOM**：把 `EF BB BF` 写回 `skills/writing-plans/SKILL.md`（首字节 `EF BB BF 2D 2D 2D`），`check-preset` 输出两条 FAIL——`no shipped text file starts with a byte-order mark`（点名文件与字节序列）与 `every SKILL.md carries matching frontmatter`（`has no frontmatter`），合计 `20 passed, 2 failed`。还原（首字节 `2D 2D 2D 0A 6E 61`）后 `22 passed, 0 failed`。这也证明了删掉 `.replace(/^\uFEFF/,'')` 之后缺陷不再被掩盖。
+2. **账本**：删掉 `vendor/superpowers/skills/writing-plans/SKILL.md` 那条，`audit-upstream` 退出 1，输出 `FAIL [UNDOCUMENTED_EDIT] ... differs from skills/writing-plans/SKILL.md and no ledger entry says why`；还原后 0 问题。
+3. 其余 9 个问题码由 `tests/audit-upstream.test.mjs` 的内存 fixture 覆盖，每个码一例。
+
+### v0.3.1 实测
+
+```
+$ node scripts/check-preset.mjs
+22 passed, 0 failed
+$ node --test
+ℹ tests 56  ℹ pass 56  ℹ fail 0
+$ node scripts/audit-upstream.mjs
+99 vendored files — 17 identical mirrors, 26 edited, 11 ported, 41 omitted, 2 reference, 2 license — 0 problem(s)
+upstreams: superpowers 7.0.2 (87 files), ecc 2.2.3 (12 files)
+```
+
+### 明确不做
+
+- 技能里 11 个标了 `bash` 的代码围栏：只是示例标签，全文没有一处指令叫 agent 跑 bash；改写会偏离上游排版。
+- `dot` 不在本机，`render-graphs.mjs` 跑不了：技能已写明它需要 graphviz 且会报错说明，这是诚实行为，不是缺陷。
+- 只在本包内的 16 个新文件不进账本：`check-preset` 的 `EXPECTED_SKILLS` 已经管技能集，账本只负责 vendor 侧。
+- 不从 `UPSTREAM.md` 散文里解析版本号做交叉校验：版本在账本里声明并由审计打印，散文仍归人读。
+
 ## v0.1 基线（保留）
 
 | 日期 | 结论 | 证据 | 备注 |

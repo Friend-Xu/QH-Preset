@@ -4,6 +4,7 @@
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs'
 import { join, dirname, resolve, extname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { auditCheckout } from './audit-upstream.mjs'
 
 const root = resolve(join(dirname(fileURLToPath(import.meta.url)), '..'))
 const patchPath = join(root, 'cordis.patch.yml')
@@ -377,6 +378,14 @@ check('the instinct triggers are the same in the hook and in its contract', () =
   }
 })
 
+check('the upstream ledger accounts for every vendored file', () => {
+  // Prose cannot fail, and "which upstream files did we keep, change or drop" was
+  // prose. This is the machine half of docs/UPSTREAM.md: every file under vendor/
+  // needs a recorded disposition and that record has to still match the bytes.
+  const { problems, counts, files } = auditCheckout(root)
+  assert(problems.length === 0, problems.map(problem => `[${problem.code}] ${problem.message}`).join('; '))
+  return `${files} files — ${counts.identical} identical, ${counts.edited} edited, ${counts.ported} ported, ${counts.omitted} omitted`
+})
 
 for (const line of passes) console.log(`PASS  ${line}`)
 for (const line of failures) console.log(`FAIL  ${line}`)

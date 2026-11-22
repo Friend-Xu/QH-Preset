@@ -1,0 +1,356 @@
+{
+  "upstreams": [
+    {
+      "id": "superpowers",
+      "version": "7.0.2",
+      "path": "vendor/superpowers"
+    },
+    {
+      "id": "ecc",
+      "version": "2.2.3",
+      "path": "vendor/ecc"
+    }
+  ],
+  "entries": [
+    {
+      "path": "vendor/ecc/eval-harness/SKILL.md",
+      "disposition": "ported",
+      "local": "skills/eval-harness/SKILL.md",
+      "doc": "R7"
+    },
+    {
+      "path": "vendor/ecc/LICENSE-ECC.txt",
+      "disposition": "license"
+    },
+    {
+      "path": "vendor/ecc/rules-common/agents.md",
+      "disposition": "ported",
+      "local": [
+        "skills/qh-judgment/SKILL.md",
+        "skills/qh-judgment/references/delegation.md"
+      ],
+      "doc": "R6"
+    },
+    {
+      "path": "vendor/ecc/rules-common/code-review.md",
+      "disposition": "ported",
+      "local": "skills/qh-judgment/references/review.md",
+      "doc": "R6"
+    },
+    {
+      "path": "vendor/ecc/rules-common/coding-style.md",
+      "disposition": "omitted",
+      "doc": "E8"
+    },
+    {
+      "path": "vendor/ecc/rules-common/development-workflow.md",
+      "disposition": "omitted",
+      "doc": "E7"
+    },
+    {
+      "path": "vendor/ecc/rules-common/git-workflow.md",
+      "disposition": "omitted",
+      "doc": "E13"
+    },
+    {
+      "path": "vendor/ecc/rules-common/hooks.md",
+      "disposition": "omitted",
+      "doc": "E14"
+    },
+    {
+      "path": "vendor/ecc/rules-common/patterns.md",
+      "disposition": "omitted",
+      "doc": "E10"
+    },
+    {
+      "path": "vendor/ecc/rules-common/performance.md",
+      "disposition": "omitted",
+      "doc": "E11"
+    },
+    {
+      "path": "vendor/ecc/rules-common/security.md",
+      "disposition": "omitted",
+      "doc": "E12"
+    },
+    {
+      "path": "vendor/ecc/rules-common/testing.md",
+      "disposition": "omitted",
+      "doc": "E9"
+    },
+    {
+      "path": "vendor/superpowers/AGENTS.md",
+      "disposition": "reference"
+    },
+    {
+      "path": "vendor/superpowers/hooks/",
+      "disposition": "omitted",
+      "doc": "R12"
+    },
+    {
+      "path": "vendor/superpowers/LICENSE-Superpowers.txt",
+      "disposition": "license"
+    },
+    {
+      "path": "vendor/superpowers/package.json",
+      "disposition": "reference"
+    },
+    {
+      "path": "vendor/superpowers/skills/brainstorming/scripts/",
+      "disposition": "omitted",
+      "doc": "R2"
+    },
+    {
+      "path": "vendor/superpowers/skills/brainstorming/SKILL.md",
+      "disposition": "edited",
+      "local": "skills/brainstorming/SKILL.md",
+      "doc": [
+        "R2",
+        "R5"
+      ]
+    },
+    {
+      "path": "vendor/superpowers/skills/brainstorming/visual-companion.md",
+      "disposition": "omitted",
+      "doc": "R2"
+    },
+    {
+      "path": "vendor/superpowers/skills/diagnosing-superpowers/",
+      "disposition": "omitted",
+      "doc": "S2"
+    },
+    {
+      "path": "vendor/superpowers/skills/dispatching-parallel-agents/SKILL.md",
+      "disposition": "omitted",
+      "doc": "S1"
+    },
+    {
+      "path": "vendor/superpowers/skills/executing-plans/scripts/task-done",
+      "disposition": "ported",
+      "local": "skills/executing-plans/scripts/task-done.mjs",
+      "doc": "R3"
+    },
+    {
+      "path": "vendor/superpowers/skills/executing-plans/scripts/task-start",
+      "disposition": "ported",
+      "local": "skills/executing-plans/scripts/task-start.mjs",
+      "doc": "R3"
+    },
+    {
+      "path": "vendor/superpowers/skills/executing-plans/SKILL.md",
+      "disposition": "edited",
+      "local": "skills/executing-plans/SKILL.md",
+      "doc": [
+        "R1",
+        "R3"
+      ]
+    },
+    {
+      "path": "vendor/superpowers/skills/finishing-a-development-branch/SKILL.md",
+      "disposition": "edited",
+      "local": "skills/finishing-a-development-branch/SKILL.md",
+      "doc": "R11"
+    },
+    {
+      "path": "vendor/superpowers/skills/subagent-driven-development/re-review-prompt.md",
+      "disposition": "edited",
+      "local": "skills/subagent-driven-development/re-review-prompt.md",
+      "doc": "R3"
+    },
+    {
+      "path": "vendor/superpowers/skills/subagent-driven-development/references/batching.md",
+      "disposition": "edited",
+      "local": "skills/subagent-driven-development/references/batching.md",
+      "doc": "R1"
+    },
+    {
+      "path": "vendor/superpowers/skills/subagent-driven-development/references/cannot-verify.md",
+      "disposition": "edited",
+      "local": "skills/subagent-driven-development/references/cannot-verify.md",
+      "doc": "R1"
+    },
+    {
+      "path": "vendor/superpowers/skills/subagent-driven-development/references/final-review.md",
+      "disposition": "edited",
+      "local": "skills/subagent-driven-development/references/final-review.md",
+      "doc": [
+        "R3",
+        "R1"
+      ]
+    },
+    {
+      "path": "vendor/superpowers/skills/subagent-driven-development/references/fix-loop.md",
+      "disposition": "edited",
+      "local": "skills/subagent-driven-development/references/fix-loop.md",
+      "doc": "R3"
+    },
+    {
+      "path": "vendor/superpowers/skills/subagent-driven-development/references/handling-reports.md",
+      "disposition": "edited",
+      "local": "skills/subagent-driven-development/references/handling-reports.md",
+      "doc": "R1"
+    },
+    {
+      "path": "vendor/superpowers/skills/subagent-driven-development/references/preflight.md",
+      "disposition": "edited",
+      "local": "skills/subagent-driven-development/references/preflight.md",
+      "doc": "R1"
+    },
+    {
+      "path": "vendor/superpowers/skills/subagent-driven-development/references/resuming.md",
+      "disposition": "edited",
+      "local": "skills/subagent-driven-development/references/resuming.md",
+      "doc": "R1"
+    },
+    {
+      "path": "vendor/superpowers/skills/subagent-driven-development/scripts/review-package",
+      "disposition": "ported",
+      "local": "skills/subagent-driven-development/scripts/review-package.mjs",
+      "doc": "R3"
+    },
+    {
+      "path": "vendor/superpowers/skills/subagent-driven-development/scripts/sdd-repo",
+      "disposition": "ported",
+      "local": "skills/subagent-driven-development/scripts/sdd-repo.mjs",
+      "doc": "R3"
+    },
+    {
+      "path": "vendor/superpowers/skills/subagent-driven-development/scripts/sdd-workspace",
+      "disposition": "ported",
+      "local": "skills/subagent-driven-development/scripts/sdd-workspace.mjs",
+      "doc": "R3"
+    },
+    {
+      "path": "vendor/superpowers/skills/subagent-driven-development/scripts/task-brief",
+      "disposition": "ported",
+      "local": "skills/subagent-driven-development/scripts/task-brief.mjs",
+      "doc": "R3"
+    },
+    {
+      "path": "vendor/superpowers/skills/subagent-driven-development/SKILL.md",
+      "disposition": "edited",
+      "local": "skills/subagent-driven-development/SKILL.md",
+      "doc": [
+        "R3",
+        "R15"
+      ]
+    },
+    {
+      "path": "vendor/superpowers/skills/subagent-driven-development/task-reviewer-prompt.md",
+      "disposition": "edited",
+      "local": "skills/subagent-driven-development/task-reviewer-prompt.md",
+      "doc": "R3"
+    },
+    {
+      "path": "vendor/superpowers/skills/systematic-debugging/find-polluter.sh",
+      "disposition": "ported",
+      "local": "skills/systematic-debugging/scripts/find-polluter.mjs",
+      "doc": "R9"
+    },
+    {
+      "path": "vendor/superpowers/skills/systematic-debugging/root-cause-tracing.md",
+      "disposition": "edited",
+      "local": "skills/systematic-debugging/root-cause-tracing.md",
+      "doc": "R9"
+    },
+    {
+      "path": "vendor/superpowers/skills/systematic-debugging/SKILL.md",
+      "disposition": "edited",
+      "local": "skills/systematic-debugging/SKILL.md",
+      "doc": "R1"
+    },
+    {
+      "path": "vendor/superpowers/skills/test-driven-development/writing-good-tests.md",
+      "disposition": "edited",
+      "local": "skills/test-driven-development/writing-good-tests.md",
+      "doc": "R16"
+    },
+    {
+      "path": "vendor/superpowers/skills/using-git-worktrees/SKILL.md",
+      "disposition": "edited",
+      "local": "skills/using-git-worktrees/SKILL.md",
+      "doc": "R11"
+    },
+    {
+      "path": "vendor/superpowers/skills/using-superpowers/references/claude-code-tools.md",
+      "disposition": "edited",
+      "local": "skills/using-superpowers/references/claude-code-tools.md",
+      "doc": "R1"
+    },
+    {
+      "path": "vendor/superpowers/skills/using-superpowers/references/gemini-tools.md",
+      "disposition": "edited",
+      "local": "skills/using-superpowers/references/gemini-tools.md",
+      "doc": "R1"
+    },
+    {
+      "path": "vendor/superpowers/skills/using-superpowers/SKILL.md",
+      "disposition": "edited",
+      "local": "skills/using-superpowers/SKILL.md",
+      "doc": [
+        "R4",
+        "R14"
+      ]
+    },
+    {
+      "path": "vendor/superpowers/skills/writing-plans/SKILL.md",
+      "disposition": "edited",
+      "local": "skills/writing-plans/SKILL.md",
+      "doc": "R1"
+    },
+    {
+      "path": "vendor/superpowers/skills/writing-skills/references/anthropic-best-practices.md",
+      "disposition": "omitted",
+      "doc": "R10"
+    },
+    {
+      "path": "vendor/superpowers/skills/writing-skills/references/bulletproofing.md",
+      "disposition": "edited",
+      "local": "skills/writing-skills/references/bulletproofing.md",
+      "doc": "R1"
+    },
+    {
+      "path": "vendor/superpowers/skills/writing-skills/references/CLAUDE_MD_TESTING.md",
+      "disposition": "omitted",
+      "doc": "R10"
+    },
+    {
+      "path": "vendor/superpowers/skills/writing-skills/references/discovery.md",
+      "disposition": "edited",
+      "local": "skills/writing-skills/references/discovery.md",
+      "doc": "R1"
+    },
+    {
+      "path": "vendor/superpowers/skills/writing-skills/references/flowcharts.md",
+      "disposition": "edited",
+      "local": "skills/writing-skills/references/flowcharts.md",
+      "doc": [
+        "R1",
+        "R10"
+      ]
+    },
+    {
+      "path": "vendor/superpowers/skills/writing-skills/references/testing-skills-with-subagents.md",
+      "disposition": "edited",
+      "local": "skills/writing-skills/references/testing-skills-with-subagents.md",
+      "doc": [
+        "R1",
+        "R10"
+      ]
+    },
+    {
+      "path": "vendor/superpowers/skills/writing-skills/render-graphs.js",
+      "disposition": "ported",
+      "local": "skills/writing-skills/scripts/render-graphs.mjs",
+      "doc": "R10"
+    },
+    {
+      "path": "vendor/superpowers/skills/writing-skills/SKILL.md",
+      "disposition": "edited",
+      "local": "skills/writing-skills/SKILL.md",
+      "doc": [
+        "R10",
+        "R17"
+      ]
+    }
+  ]
+}

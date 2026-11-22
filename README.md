@@ -41,13 +41,16 @@ hooks/                     instinct 插件：tools/result 捕获 + systemPrompt.
 vendor/superpowers/        7.0.2 原样快照（diff 用，含 bash 版 helper）
 vendor/ecc/                ECC 2.2.3 的 rules/common 与 eval-harness（提炼来源）
 docs/HOOKS.md              hook 的机制、为什么不用 agent/pre-step、为什么不做重复调用检测
-docs/UPSTREAM.md           上游版本、逐条改动、刻意不搬的规则
+docs/UPSTREAM.md           上游版本、逐条改动、刻意不搬的规则（每个 vendor 文件都有处置）
+docs/upstream-ledger.json  上面那份账本的机器可读部分：每个 vendor 文件一条处置 + 引用一行理由
 docs/evals/                eval 定义（能力 / 回归）与负样本
-scripts/check-preset.mjs   结构契约自检（20 项）
+scripts/check-preset.mjs   结构契约自检（22 项）
+scripts/audit-upstream.mjs 核对 vendor/ 与账本：无处置、假改动、失效引用都以非零退出码报出
 scripts/assert-session.mjs 会话日志断言：技能顺序、写入门禁、工具错误、runtime context
 tests/helpers.test.mjs     helper 行为测试（node:test）
 tests/instincts.test.mjs   instinct 决策逻辑测试
 tests/find-polluter.test.mjs  find-polluter 移植测试（含真实 npm test 的一次端到端）
+tests/audit-upstream.test.mjs 上游账本审计：9 个问题码各一例失败样本，另加 2 个绿灯和标签读法
 tests/session-assert.test.mjs runtime context 断言的读法
 tests/acceptance.md        M1–M9 验收记录
 ```
@@ -60,20 +63,24 @@ tests/acceptance.md        M1–M9 验收记录
 | TDD、`qh-judgment`、`eval-harness`、门禁探测规则 | 已开（v0.2） |
 | helper 移植为 Node、会话断言、16 项自检 | 已开（v0.2） |
 | instinct hook（`.qh/instincts/` 常驻判断）、另外 4 个技能、20 项自检 | 已开（v0.3） |
+| 8 个文件的 BOM 清零、检查改为拒绝 BOM、上游账本与 `audit-upstream`、22 项自检 | 已开（v0.3.1） |
 | 视觉伴生服务器 | **关闭**（不提供浏览器通道；要图就写 HTML 文件给路径） |
 | 从捕获里自动写规则 | **不做**：重复调用已有 `repeat-tool-reminder`，规则只从被提升的 instinct 来 |
 
 ## 自检
 
 ```powershell
-node scripts/check-preset.mjs      # 20 项结构契约
-node --test                        # 44 例行为测试
+node scripts/check-preset.mjs      # 22 项结构契约（含上游账本）
+node --test                        # 56 例行为测试
+node scripts/audit-upstream.mjs    # 上游账本：99 个 vendor 文件各有处置，0 问题
 node scripts/assert-session.mjs <session.v4.jsonl.zstd> --preset quanheng `
   --skill-order using-superpowers,brainstorming --no-write-before writing-plans --no-tool-errors
 node scripts/assert-session.mjs <session.v4.jsonl.zstd> `
   --context "quanheng:instincts=read-the-error" --context-after <失败那次的 seq>
 ```
 
-`check-preset.mjs` 检查：preset 声明的行/分组/isolate/五字段、技能集与 frontmatter、技能内相对链接可解析、helper 提及可解析且无 `bash scripts/`、无上游命名空间与家目录路径、helper/插件不管道捕获、每个 import 可解析、persona 四条不变量、`dsh-tools.md` 的动作映射、提炼技能标注 `origin: ECC`、包元数据与技能根表达式、hooks 的注册面与 `exports` 子路径（含 `./package.json`）、instinct 触发词在代码与契约文档里一致、单文件 ≤32KB。
+`check-preset.mjs` 检查：preset 声明的行/分组/isolate/五字段、技能集与 frontmatter、**任何文件都不以 BOM 开头**、技能内相对链接可解析、helper 提及可解析且无 `bash scripts/`、无上游命名空间与家目录路径、helper/插件不管道捕获、每个 import 可解析、persona 四条不变量、`dsh-tools.md` 的动作映射、提炼技能标注 `origin: ECC`、包元数据与技能根表达式、hooks 的注册面与 `exports` 子路径（含 `./package.json`）、instinct 触发词在代码与契约文档里一致、**账本覆盖每个 vendor 文件**、单文件 ≤32KB。
+
+`audit-upstream.mjs` 单独跑也能用：它按账本逐条核对字节，报出没有处置的 vendor 文件、记成 `edited` 却字节相同的条目、指向不存在路径的 `ported`、以及 `doc` 引用了一行不存在的理由。`docs/UPSTREAM.md` 的升级流程第 2 步就是它——之前那一步写的是 `diff -r`，而 `diff` 在 PowerShell 里是 `Compare-Object` 的别名，那条命令从来没有真的比对过。
 
 `assert-session.mjs` 的 `--context NAME[=子串]` 断言某条 runtime context 真的到达过模型；`--context-after SEQ` 进一步要求它的首次出现不早于该 seq——这是把"规则只在证据出现后才生效"变成可重跑命令的那一半。

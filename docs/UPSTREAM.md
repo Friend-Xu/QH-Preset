@@ -1,6 +1,6 @@
 # Upstream
 
-本 bundle 是两份 MIT 项目的衍生作品。上游原样快照在 `vendor/`，本文件记录差量。
+本 bundle 是两份 MIT 项目的衍生作品。上游原样快照在 `vendor/`，本文件记录差量与取舍；`docs/upstream-ledger.json` 是它的机器可读部分——每个 vendor 文件一行处置——两者由 `node scripts/audit-upstream.mjs` 交叉校验。
 
 | 上游 | 版本 | 取证方式 | 本地快照 |
 |---|---|---|---|
@@ -29,22 +29,45 @@
 | 16 | v0.2（v0.3.1 补登） | `writing-good-tests.md` 里 `(superpowers:writing-skills)` 一处改成指令："跑一个新会话，看它实际做了什么" | `skills/test-driven-development/writing-good-tests.md` | #1 说的是只改命名空间，这处同时改了句式。改动本身是对的，但记录要如实。补登原因：v0.2 加装 TDD 时未记录 |
 | 17 | v0.3（v0.3.1 补登） | `writing-skills` 的部署清单从"提交并推到 fork / 考虑提 PR"换成三条本仓库的动作：与测试同一提交、改动记进本文件、跑 `check-preset` | `skills/writing-skills/SKILL.md` | 本仓库没有 fork 也没有 PR 流程，清单指向不存在的动作等于没有清单。补登原因：v0.3 移植时未记录 |
 | 18 | v0.3.1 | 去掉 8 个文件在 v0.1 批量改名时被写入的 UTF-8 BOM（`EF BB BF`）；`check-preset` 改为**拒绝** BOM，而不是在解析前抹掉它 | `skills/` 8 个文件、`scripts/check-preset.mjs` | `skills/writing-plans/SKILL.md` 的首行因此是 `\uFEFF---`。今天没坏只是因为 fs 层用 `TextDecoder` 解码会吃掉 BOM；`skill-filesystem` 在没有 fs 服务时走 `readFile(...,'utf8')`，那条路径不吃 BOM，而 `parseFrontmatter` 要求首行严格等于 `---`，于是这个技能会从技能目录里静默消失。负样本见 `tests/acceptance.md` |
+| 19 | v0.3.1 | 新增 `docs/upstream-ledger.json`（每个 vendor 文件一条处置）与 `scripts/audit-upstream.mjs`；`check-preset` 增加一项"账本覆盖每个 vendor 文件" | 两个新文件、`scripts/check-preset.mjs`、本文件 | 上一轮的核对靠人工 `diff` 完成，而 `diff` 在 PowerShell 里是 `Compare-Object` 的别名：`diff -r` 不报错，只打印两行目录名。于是"升级流程第 2 步"一直是空转的。账本把"每个上游文件都有去向"变成会失败的检查 |
 
 **与上游字节相同的**：`implementer-prompt.md`、`builder-check-prompt.md`、`code-reviewer.md` 三份 prompt 模板；其余 prompt 模板只改了 helper 调用那一行。技能正文的方法论与 Red Flags 表，除上表逐条列出的改动外没有动——**上表是完整清单**，这一点在 v0.3.1 之前并不成立：当时有 4 处改动没进表，现在按 #14–#17 补登。
+
+## 差量账本
+
+`docs/upstream-ledger.json` 给 `vendor/` 下每个文件一条处置，`scripts/audit-upstream.mjs` 校验它与实际字节一致：
+
+| 处置 | 含义 |
+|---|---|
+| （不写） | 唯一隐式豁免：`vendor/superpowers/skills/<x>` 对应的 `skills/<x>` 存在且**字节相同** |
+| `edited` | 有本地镜像但字节不同，必须写 `local` |
+| `ported` | 落到另一个本地路径（`local` 可以是数组），必须逐个存在 |
+| `omitted` | 不发；路径以 `/` 结尾表示整个子树 |
+| `reference` | 只作为取证材料（版本、上游自己的说明），从不上线 |
+| `license` | vendored 法务文本 |
+
+每条还要写 `doc`：`R<n>`（本文件改动表）、`E<n>`（下面的 ECC 表）或 `S<n>`（技能取舍表）。审计会确认那一行真的存在，所以"处置"和"理由"不会脱钩。
 
 ## 刻意不搬的 ECC 规则
 
 ECC `rules/common/` 里还有 `development-workflow.md`、`testing.md`、`patterns.md`、`performance.md`、`security.md`、`coding-style.md`、`git-workflow.md`、`hooks.md` 八个文件（`agents.md` 与 `code-review.md` 见上表 #6）。逐条取舍：
 
-| ECC 规则 | 处理 | 原因 |
-|---|---|---|
-| delegation completion contract | 搬（`qh-judgment/references/delegation.md` + persona） | 可判定，且本 Harness 的失败模式相同（父级以"等待中"结束会丢子级结果） |
-| review 分级与放行条件 | 搬（`references/review.md`） | 可判定；与 `requesting-code-review` 互补 |
-| 80% 覆盖率、50 行函数、800 行文件、嵌套 ≤4 层 | **不搬** | 上游未给出这些阈值的来源；本仓库的工程原则在 `$DSH_HOME/AGENTS.md`，不引入第二套数字教条 |
-| `ecc:*` agent 名单、`Agent(subagent_type:)` 调用 | **不搬** | 本版本 subagent 不接受 per-child persona，角色只能进 prompt |
-| GitHub 代码检索 → Context7 → Exa 的强制调研顺序 | **不搬** | 依赖本机没有的工具；"先查已有方案"已在 persona 里 |
-| `/eval` slash command、`.claude/evals/` 布局 | **换成** `docs/evals/` + `.qh/evals/` | 本部署没有 slash command 插件；`.claude/` 是别的 harness 的目录 |
-| `development-workflow.md` 整篇 | **每一步已有去向**：调研顺序 → "强制调研顺序"行；`planner`/`tdd-guide` agent → "`ecc:` agent 名单"行；80% 覆盖率 → 阈值行；commit 与 pre-review → `git-workflow.md` 行 | 它每一步都被本表某一行判过了，但**文件本身**此前从未被登记，做核对的人会以为漏了一个。v0.3.1 按文件补登 |
+| # | 规则或文件 | 处理 | 原因 |
+|---|---|---|---|
+| E1 | delegation completion contract | 搬（`qh-judgment/references/delegation.md` + persona） | 可判定，且本 Harness 的失败模式相同（父级以"等待中"结束会丢子级结果） |
+| E2 | review 分级与放行条件 | 搬（`references/review.md`） | 可判定；与 `requesting-code-review` 互补 |
+| E3 | 80% 覆盖率、50 行函数、800 行文件、嵌套 ≤4 层 | **不搬** | 上游未给出这些阈值的来源；本仓库的工程原则在 `$DSH_HOME/AGENTS.md`，不引入第二套数字教条 |
+| E4 | `ecc:*` agent 名单、`Agent(subagent_type:)` 调用 | **不搬** | 本版本 subagent 不接受 per-child persona，角色只能进 prompt |
+| E5 | GitHub 代码检索 → Context7 → Exa 的强制调研顺序 | **不搬** | 依赖本机没有的工具；"先查已有方案"已在 persona 里 |
+| E6 | `/eval` slash command、`.claude/evals/` 布局 | **换成** `docs/evals/` + `.qh/evals/` | 本部署没有 slash command 插件；`.claude/` 是别的 harness 的目录 |
+| E7 | `development-workflow.md` 整篇 | **每一步已有去向** | 调研顺序 → E5；`planner`/`tdd-guide` agent → E4；80% 覆盖率 → E3；commit 与 pre-review → E13。文件本身此前从未被登记，做核对的人会以为漏了一个（v0.3.1 按文件补登） |
+| E8 | `coding-style.md` 整篇 | **大部分已有去向** | 不可变、KISS/DRY/YAGNI、错误处理、边界校验 → `$DSH_HOME/AGENTS.md` §1 §4 §5；文件行数与嵌套 → E3 不搬；命名约定与"代码味道"清单 → 不搬（无来源，且语言相关） |
+| E9 | `testing.md` 整篇 | **部分已有去向** | TDD 循环 → `test-driven-development`（Superpowers）；80% 覆盖率 → E3 不搬；`tdd-guide` agent → E4 不搬；AAA 结构与测试命名 → 不搬（通用常识，无来源） |
+| E10 | `patterns.md` 整篇 | **不搬** | skeleton 项目的"多个 agent 并行评估"依赖 E4 的名单；Repository Pattern 与响应 envelope 是具体工程选择，本仓库的对应原则在 `$DSH_HOME/AGENTS.md` §1（接口两侧不互知） |
+| E11 | `performance.md` 整篇 | **不搬** | Haiku/Sonnet/Opus 分级是 ECC 自己的模型名；推理档位与 `/effort` 是 Claude Code 的机制，本部署的对应物是 `subagent` 的 `model` 参数；上下文窗口那段的等价物在 `subagent-driven-development` 的 Model Selection；`build-error-resolver` agent 属 E4 |
+| E12 | `security.md` 整篇 | **不搬** | 清单本身可判定，但它是"提交前检查表"，本仓库没有安全角色也没有对应门禁；`security-reviewer` agent 属 E4 |
+| E13 | `git-workflow.md` 整篇 | **不搬** | commit 格式与 PR 流程是团队约定，本仓库是单人 + 本地；`includeCoAuthoredBy` 是 Claude Code 的设置。只有"PR 前先看完整 diff"这一条与 #3 的 review 包同向 |
+| E14 | `hooks.md` 整篇 | **不搬** | PreToolUse/PostToolUse/Stop 是 Claude Code 的钩子体系，本仓库的对应物是 `hooks/` 插件（#12），事件名与挂载方式都不同；`TodoWrite` 一节属于别的工具 |
 
 ## 技能取舍
 
@@ -52,10 +75,10 @@ ECC `rules/common/` 里还有 `development-workflow.md`、`testing.md`、`patter
 
 `vendor/superpowers/skills/` 共 15 个，v0.3 之后**只剩 2 个未装**：
 
-| 技能 | 为什么还没装 |
-|---|---|
-| `dispatching-parallel-agents` | `subagent-driven-development` 已覆盖派遣与收集；并行纪律放在 `qh-judgment/references/delegation.md` |
-| `diagnosing-superpowers` | 会往 `~/.superpowers/` 写文件，与本项目"文件留在项目内"冲突，且它诊断的是本 Harness 没有的那个插件；重新启用前要先改路径和诊断对象 |
+| # | 技能 | 为什么还没装 |
+|---|---|---|
+| S1 | `dispatching-parallel-agents` | `subagent-driven-development` 已覆盖派遣与收集；并行纪律放在 `qh-judgment/references/delegation.md` |
+| S2 | `diagnosing-superpowers` | 会往 `~/.superpowers/` 写文件，与本项目"文件留在项目内"冲突，且它诊断的是本 Harness 没有的那个插件；重新启用前要先改路径和诊断对象 |
 
 ## helper 移植的细节
 
@@ -71,6 +94,6 @@ ECC `rules/common/` 里还有 `development-workflow.md`、`testing.md`、`patter
 ## 升级流程
 
 1. 拉上游新版本到 `vendor/`（替换快照）。
-2. `diff -r vendor/superpowers/skills skills` 看本文件表格是否有新增差量；ECC 侧 `diff -r vendor/ecc/rules-common skills/qh-judgment/references`。
+2. `node scripts/audit-upstream.mjs`：它按账本逐条核对字节，报出没有处置的文件、处置与字节不符的条目、指向不存在本地文件的 `ported`、以及 `doc` 指向不存在行的条目，有问题即以退出码 1 结束。把新差量补进上表与 `docs/upstream-ledger.json`，再跑到 0 问题。
 3. 重跑 `node scripts/check-preset.mjs`、`node --test`，再跑 `docs/evals/` 里的会话断言。
 4. 在上表补一行日期与版本。
