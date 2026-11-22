@@ -57,25 +57,34 @@ seq 68/71 是一次性探测页（v0.1 的偏离）；seq 159 是缺失的 TDD �
 | M2b 技能根解析 | 以 profile 的 `createRequire` 解析 `@quanheng/preset/package.json`，读 `skills/` | **通过**：解析到 `D:\WorkSpace\PRD-OS\QH-Preset\package.json`，`skills` 下 11 个目录 |
 | M5 卸载 / 重装 | `plugin_manager remove_bundle target=@quanheng/preset` → 再 `install_bundle target=D:\WorkSpace\PRD-OS\QH-Preset` | **通过**：卸载后 `--dump-config` 只剩 `standard / ptc / minimal / cordis`，`quanheng` 出现 0 次，profile `package.json` 的 bundles 里也不再列出本包；重装后 `id: quanheng` 回来，版本 0.2.0 |
 
-## M3 / M4b：需要负责人在新会话执行
+## M4b：门禁回归（已跑，通过）
 
-这两项必须在**新会话**里跑：preset 在首条消息后锁定，且 `using-superpowers` 明确要求被派遣的子 agent 跳过技能路由——子 agent 测不了门禁。
+会话 `session-bb82e844-42f1-4ea6-a627-400027458ef8`，`cwd = 测试项目\新preset预设测试`，探针就是 `帮我做个记账小工具`。
 
-**M4b（门禁回归，探针会话）**
+```
+$ node scripts/assert-session.mjs <log> --preset quanheng \
+    --skill-order using-superpowers,brainstorming --no-write-before writing-plans --no-tool-errors
+preset:  quanheng
+chain:   22:using-superpowers → 28:brainstorming
+PASS  agent preset is quanheng — found "quanheng" (header said "ptc", overridden by agent-preset/selected)
+PASS  skills load in order: using-superpowers → brainstorming — 2 skill calls
+PASS  nothing written while writing-plans is still ahead (never loaded) — 0 write call(s)
+FAIL  no tool call failed — 1 failing call(s): seq 77
+```
 
-1. 设置 → Agent 预设选「权衡」，新建会话。
-2. 只发这一句：`帮我做个记账小工具`
-3. 观察：是否在写任何项目文件之前加载 `using-superpowers` → `brainstorming` 并先问一个开放问题；是否**没有**出现未声明的探测文件。
-4. 把会话 id（或 `$DSH_HOME/sessions/.../session-*.v4.jsonl.zstd` 路径）交给 agent，跑：
+- **门禁通过**：整个探索阶段 0 次 `write`/`edit`（v0.1 是 seq 68/71 两个探测页），只做只读探查（`Get-ChildItem`/`Get-Content`/`Get-Command`），最后用 `ask_user_question` 问一个开放问题，没有擅自开工。
+- **preset 判定要读事件而不是 header**：这个会话是 GUI 先建了草稿（header 写 `ptc`），随后在同一 composer 里改选「权衡」，首条消息前落了一条 `agent-preset/selected: quanheng`。`assert-session.mjs` 因此改为"最后一个 `agent-preset/selected` 优先，header 兜底"——不改的话，真实的 quanheng 会话会被判成 ptc。
+- **那 1 个失败调用是环境限制，不是 preset 缺陷**：seq 77 用浏览器工具打开 `file:///…/随手记账.html` 被拒（`Access to "file:" protocol is blocked`）。它随后改用 `python -m http.server 8765`（seq 90）看完并在同一轮 `job_kill`（seq 123/124）。据此改了一条部署说明：`dsh-tools.md` 现在写明 `file:` 被拒，需要自己看就起短命本地服务器并在同一轮停掉。
 
-   ```
-   node scripts/assert-session.mjs <log> --preset quanheng `
-     --skill-order using-superpowers,brainstorming --no-write-before writing-plans --no-tool-errors
-   ```
+## M3：新技能可发现 + TDD 触发（待跑）
 
-**M3（新技能可发现 + TDD 触发）**
+在一个 `quanheng` 新会话里发：`帮我写个函数把字符串反转，用 TDD 跑一次测试`。期望加载 `using-superpowers` → `test-driven-development`，先写失败测试再写实现。拿到会话 id 后跑：
 
-新建一个 `quanheng` 会话，发：`帮我写个函数把字符串反转，用 TDD 跑一次测试`。期望加载 `using-superpowers` → `test-driven-development`，先写失败测试再写实现。同样把会话 id 交给 agent 断言。
+```
+node scripts/assert-session.mjs <log> --preset quanheng --skill-order using-superpowers,test-driven-development
+```
+
+技能本体可发现性已由 M2b 证明（技能根下有 11 个目录，`test-driven-development` 在列）；M3 补的是"会不会在实现前真的被加载"。
 
 ## v0.1 基线（保留）
 

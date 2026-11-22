@@ -53,6 +53,25 @@ export function skillChain(events) {
   return chain
 }
 
+/**
+ * The preset the session actually ran under.
+ *
+ * The header records the preset the session was created with; a GUI draft can be
+ * created before the owner picks one, and switching it emits
+ * `agent-preset/selected` before the first turn. The last such event wins, and the
+ * header is the fallback.
+ */
+export function effectivePreset(events) {
+  let preset
+  for (const event of events) {
+    if (event.type === 'agent-preset/selected' && typeof event.data?.agentPreset === 'string') {
+      preset = event.data.agentPreset
+    }
+  }
+  if (preset !== undefined) return preset
+  return events.find(event => event.type === 'session')?.agentPreset
+}
+
 function subsequenceProblem(order, chain) {
   let position = 0
   for (const wanted of order) {
@@ -93,14 +112,15 @@ function parseArgs(argv) {
 export function checkSession(events, options) {
   const header = events.find(event => event.type === 'session')
   if (header === undefined) throw new Error('the log has no session header')
+  const preset = effectivePreset(events)
   const chain = skillChain(events)
   const results = []
 
   if (options.preset !== undefined) {
     results.push({
       name: `agent preset is ${options.preset}`,
-      ok: header.agentPreset === options.preset,
-      detail: `found ${JSON.stringify(header.agentPreset)}`,
+      ok: preset === options.preset,
+      detail: `found ${JSON.stringify(preset)}${header.agentPreset !== preset ? ` (header said ${JSON.stringify(header.agentPreset)}, overridden by agent-preset/selected)` : ''}`,
     })
   }
 
@@ -116,14 +136,18 @@ export function checkSession(events, options) {
 
   if (options.noWriteBefore !== undefined) {
     const gateSeq = firstSequenceOf(events, event => event.type === 'tool/call' && skillNameOf(event) === options.noWriteBefore)
+    const writes = events.filter(event => event.type === 'tool/call' && WRITE_TOOLS.has(event.data?.name))
     if (gateSeq === undefined) {
+      // The gate skill never loaded, which is the normal state of a session still
+      // inside the gate. Nothing may have been written at all then.
       results.push({
-        name: `nothing written before ${options.noWriteBefore}`,
-        ok: false,
-        detail: `${options.noWriteBefore} was never loaded, so the claim cannot be checked`,
+        name: `nothing written while ${options.noWriteBefore} is still ahead (never loaded)`,
+        ok: writes.length === 0,
+        detail: writes.length === 0
+          ? '0 write call(s); the gate simply has not opened yet'
+          : `${writes.length} write call(s) without reaching ${options.noWriteBefore}: ${writes.map(event => `seq ${event.seq} ${event.data.name}`).join(', ')}`,
       })
     } else {
-      const writes = events.filter(event => event.type === 'tool/call' && WRITE_TOOLS.has(event.data?.name))
       const early = writes.filter(event => event.seq < gateSeq)
       results.push({
         name: `nothing written before ${options.noWriteBefore} (seq ${gateSeq})`,
@@ -145,7 +169,7 @@ export function checkSession(events, options) {
   }
 
   return {
-    preset: header.agentPreset ?? null,
+    preset,
     cwd: header.cwd ?? null,
     events: events.length,
     chain,

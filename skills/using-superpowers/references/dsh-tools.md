@@ -69,8 +69,14 @@ This deployment has a plan mode. When you are in it, do not edit files or run
 mutating commands; present the plan with `exit_plan_mode` and wait for
 approval. A conversational "sounds good" does not approve anything.
 
-## Visual companion
+## Looking at a page
 
-Not available. There is no browser server and no click-to-answer channel. Do
+There is no visual companion: no review server, no click-to-answer channel. Do
 not offer one. When seeing would help, write a text sketch, or write a
 self-contained HTML file into the project and give your human partner its path.
+
+If you want to look at that page yourself, `file:` URLs are blocked for the
+browser tool (实测: the navigation is refused, which costs a call and tells you
+nothing). Serve the directory from a short-lived local server bound to
+`127.0.0.1`, look, then stop it in the same turn — a server nobody stopped is a
+process left on the host.
